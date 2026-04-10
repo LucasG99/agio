@@ -33,7 +33,7 @@ O plano está organizado em quatro fases, cada uma com critério de avanço obri
 
 ---
 
-> **![agio-roadmap.png](https://res.cloudinary.com/dloj4cl3v/image/upload/v1775855441/agio-roadmap_1_zafkms.png)]**
+> **![agio-roadmap.png](https://res.cloudinary.com/dloj4cl3v/image/upload/v1775855441/agio-roadmap_1_zafkms.png)**
 >
 > *O roadmap acima organiza as quatro fases com seus critérios de avanço. A leitura mais importante não são as tarefas, mas os critérios: cada fase só progride quando o dado real confirma o que foi planejado. A Fase A valida o comportamento humano antes de qualquer tecnologia. A Fase B constrói o mínimo para o ciclo rodar sem intervenção manual. A Fase C expande para múltiplos escritórios. A Fase D transforma os dados em aprendizado.*
 
@@ -85,7 +85,7 @@ Os indicadores abaixo foram definidos na sprint 4. Esta sprint formaliza cada um
 
 ---
 
-> **![agio-kpi-dashboard.png](https://res.cloudinary.com/dloj4cl3v/image/upload/v1775855549/agio-kpi-dashboard_def3at.png)]**
+> **![agio-kpi-dashboard.png](https://res.cloudinary.com/dloj4cl3v/image/upload/v1775855549/agio-kpi-dashboard_def3at.png)**
 >
 > *O painel acima organiza os 7 indicadores em três categorias — mercado, financeiro e operacional — com metas, frequência de medição e limites de alerta. A dimensão mais relevante em cada card não é a meta em si, mas o que o número revela quando está fora do esperado. Cada indicador é o termômetro de um risco específico do modelo.*
 
@@ -135,7 +135,7 @@ A sprint 4 mapeou os riscos do Ágio por probabilidade e impacto. Esta sprint ac
 
 ---
 
-> **![agio-risk-matrix.png](https://res.cloudinary.com/dloj4cl3v/image/upload/v1775855609/agio-risk-matrix_lxdhtg.png)]**
+> **![agio-risk-matrix.png](https://res.cloudinary.com/dloj4cl3v/image/upload/v1775855609/agio-risk-matrix_lxdhtg.png)**
 >
 > *A matriz acima organiza os riscos por probabilidade e impacto. Cada quadrante tem uma lógica de resposta diferente: riscos de alto impacto e alta probabilidade pedem ação antes de avançar de fase; riscos de alto impacto e baixa probabilidade pedem plano de contingência; riscos de baixo impacto podem ser monitorados sem ação preventiva. A coluna "dado que resolve" é o elemento central desta seção: transforma cada risco em uma hipótese com fase de teste definida.*
 
