@@ -10,25 +10,6 @@ Projeto desenvolvido na trilha de Empreendedorismo do Inteli (Instituto de Tecno
 
 O Ágio entrega crédito de emergência a trabalhadores CLT de base, sem análise de Serasa, com desconto automático na próxima folha. Distribui o produto via escritórios de contabilidade que já atendem PMEs e já processam a folha mensalmente. A empresa autoriza, sem pagar nem assumir risco. O escritório recebe comissão recorrente. O trabalhador acessa por link com CPF e resolve em três cliques.
 
----
-
-## Estrutura do repositório
-
-O projeto está organizado em dois módulos, refletindo a estrutura do curso.
-
-agio/
-├── Modulo1/                  Discovery e validação (concluído)
-│   ├── Diário de bordo/
-│   ├── sprint1/
-│   ├── sprint2/
-│   ├── sprint3/
-│   ├── sprint4/
-│   └── sprint5/
-└── Modulo2/                 
-    ├── plano/
-    ├── produto/
-    └── sprints/
-
 ## Módulo 1 — Discovery e Validação
 
 Concluído. Cinco sprints cobrindo problema e mercado, validação da dor com entrevistas qualitativas, proposta de valor estruturada em três camadas, modelo de negócio completo e plano de implementação.
