@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de receita — Ágio</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  :root {
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --border: #e5e5e0;
+    --text-primary: #1a1a1a;
+    --text-secondary: #666666;
+    --text-muted: #999999;
+    --accent: #1f3a5f;
+    --accent-soft: #eef2f7;
+    --accent-hover: #284a78;
+    --success: #2d5f3f;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 48px 24px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .brand {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+    margin-bottom: 32px;
+  }
+
+  .header {
+    margin-bottom: 48px;
+  }
+
+  h1 {
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    letter-spacing: -0.02em;
+  }
+
+  .subtitle {
+    font-size: 16px;
+    color: var(--text-secondary);
+    max-width: 600px;
+  }
+
+  .inputs {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 32px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .input-group label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+
+  .input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .input-group input {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text-primary);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    font-family: inherit;
+  }
+
+  .input-group input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--surface);
+  }
+
+  .input-group input::-webkit-outer-spin-button,
+  .input-group input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .input-group input[type=number] {
+    -moz-appearance: textfield;
+  }
+
+  .input-suffix {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+
+  .summary {
+    background: var(--accent-soft);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .summary-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .summary-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .scenarios {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .scenario {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+
+  .scenario:hover {
+    border-color: var(--accent);
+  }
+
+  .scenario.featured {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .scenario.featured .scenario-name,
+  .scenario.featured .scenario-rate,
+  .scenario.featured .receipt-label,
+  .scenario.featured .annual-label {
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .scenario.featured .monthly-value,
+  .scenario.featured .annual-value {
+    color: #ffffff;
+  }
+
+  .scenario-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 24px;
+  }
+
+  .scenario-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .scenario-rate {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+
+  .receipt-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 500;
+  }
+
+  .monthly-value {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+    line-height: 1.1;
+  }
+
+  .annual-block {
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .scenario.featured .annual-block {
+    border-top-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .annual-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  .annual-value {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .footnote {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .footnote strong {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  @media (max-width: 720px) {
+    body {
+      padding: 32px 16px;
+    }
+
+    h1 {
+      font-size: 26px;
+    }
+
+    .inputs {
+      grid-template-columns: 1fr;
+      padding: 24px;
+    }
+
+    .scenarios {
+      grid-template-columns: 1fr;
+    }
+
+    .monthly-value {
+      font-size: 26px;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="brand">Ágio</div>
+
+  <div class="header">
+    <h1>Calculadora de receita</h1>
+    <p class="subtitle">Veja quanto seu escritório pode ganhar oferecendo o Ágio aos seus clientes.</p>
+  </div>
+
+  <div class="inputs">
+    <div class="input-group">
+      <label for="empresas">Empresas atendidas</label>
+      <input type="number" id="empresas" value="80" min="1" max="9999">
+      <span class="input-suffix">Quantas empresas seu escritório atende hoje</span>
+    </div>
+    <div class="input-group">
+      <label for="funcionarios">Funcionários por empresa (média)</label>
+      <input type="number" id="funcionarios" value="25" min="1" max="999">
+      <span class="input-suffix">Média de funcionários CLT por empresa</span>
+    </div>
+  </div>
+
+  <div class="summary">
+    <span class="summary-label">Total de funcionários elegíveis</span>
+    <span class="summary-value" id="totalFuncionarios">2.000</span>
+  </div>
+
+  <div class="scenarios">
+    <div class="scenario">
+      <div class="scenario-header">
+        <span class="scenario-name">Conservador</span>
+        <span class="scenario-rate">20% adesão</span>
+      </div>
+      <div class="receipt-label">Receita mensal</div>
+      <div class="monthly-value" id="mensal-20">R$ 0,00</div>
+      <div class="annual-block">
+        <div class="annual-label">Por ano</div>
+        <div class="annual-value" id="anual-20">R$ 0,00</div>
+      </div>
+    </div>
+
+    <div class="scenario featured">
+      <div class="scenario-header">
+        <span class="scenario-name">Moderado</span>
+        <span class="scenario-rate">30% adesão</span>
+      </div>
+      <div class="receipt-label">Receita mensal</div>
+      <div class="monthly-value" id="mensal-30">R$ 0,00</div>
+      <div class="annual-block">
+        <div class="annual-label">Por ano</div>
+        <div class="annual-value" id="anual-30">R$ 0,00</div>
+      </div>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-header">
+        <span class="scenario-name">Otimista</span>
+        <span class="scenario-rate">40% adesão</span>
+      </div>
+      <div class="receipt-label">Receita mensal</div>
+      <div class="monthly-value" id="mensal-40">R$ 0,00</div>
+      <div class="annual-block">
+        <div class="annual-label">Por ano</div>
+        <div class="annual-value" id="anual-40">R$ 0,00</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    <strong>Como o cálculo é feito:</strong> taxa fixa de R$ 8 por antecipação, frequência média de 1,5 usos por funcionário ativo ao mês, e comissão de 20% repassada ao escritório sobre a receita gerada.
+  </div>
+</div>
+
+<script>
+  const TAXA = 8;
+  const FREQUENCIA = 1.5;
+  const COMISSAO = 0.20;
+
+  const formatador = new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  });
+
+  const formatadorInteiro = new Intl.NumberFormat('pt-BR');
+
+  const inputEmpresas = document.getElementById('empresas');
+  const inputFuncionarios = document.getElementById('funcionarios');
+  const totalFuncionarios = document.getElementById('totalFuncionarios');
+
+  const cenarios = [
+    { adesao: 0.20, idMensal: 'mensal-20', idAnual: 'anual-20' },
+    { adesao: 0.30, idMensal: 'mensal-30', idAnual: 'anual-30' },
+    { adesao: 0.40, idMensal: 'mensal-40', idAnual: 'anual-40' }
+  ];
+
+  function calcular() {
+    const empresas = Math.max(0, parseInt(inputEmpresas.value) || 0);
+    const funcionarios = Math.max(0, parseInt(inputFuncionarios.value) || 0);
+    const total = empresas * funcionarios;
+
+    totalFuncionarios.textContent = formatadorInteiro.format(total) + ' funcionários';
+
+    cenarios.forEach(cenario => {
+      const ativos = total * cenario.adesao;
+      const receitaMensal = ativos * FREQUENCIA * TAXA * COMISSAO;
+      const receitaAnual = receitaMensal * 12;
+
+      document.getElementById(cenario.idMensal).textContent = formatador.format(receitaMensal);
+      document.getElementById(cenario.idAnual).textContent = formatador.format(receitaAnual) + ' por ano';
+    });
+  }
+
+  inputEmpresas.addEventListener('input', calcular);
+  inputFuncionarios.addEventListener('input', calcular);
+
+  calcular();
+</script>
+</body>
+</html>
