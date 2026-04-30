@@ -17,25 +17,17 @@ O Ágio entrega crédito de emergência a trabalhadores CLT de base, sem anális
 O projeto está organizado em dois módulos, refletindo a estrutura do curso.
 
 agio/
-├── Modulo1/                
+├── Modulo1/                  Discovery e validação (concluído)
 │   ├── Diário de bordo/
 │   ├── sprint1/
-│   │   ├── plano-de-entregas
-│   │   └── sprint1.md
 │   ├── sprint2/
-│   │   └── sprint2.md
 │   ├── sprint3/
-│   │   └── sprint3.md
 │   ├── sprint4/
-│   │   └── sprint4.md
 │   └── sprint5/
-│       └── sprint5.md
-└── modulo-2/         MVP e plano de negócios (em andamento)
-├── plano/        Documentação do plano de negócios
-├── produto/      Código da demo funcional
-└── sprints/      Entregáveis por sprint
-
----
+└── Modulo2/                 
+    ├── plano/
+    ├── produto/
+    └── sprints/
 
 ## Módulo 1 — Discovery e Validação
 
