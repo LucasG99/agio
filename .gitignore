@@ -1,0 +1,19 @@
+# Banco de dados SQLite (gerado pelo seed.js)
+agio.db
+
+# Dependências Node
+node_modules/
+
+# Uploads temporários
+uploads/
+
+# Variáveis de ambiente (quando existirem)
+.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
