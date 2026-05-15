@@ -76,6 +76,7 @@
                 <th>CPF</th>
                 <th>Salário líq.</th>
                 <th>Teto disp.</th>
+                <th>Tempo de casa</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -222,6 +223,18 @@
       return cpf.replace(/(\d{3})\.(\d{3})\.(\d{3})-(\d{2})/, '***.$2.$3-**');
     }
 
+    function calcularTempoCasa(dataAdmissao) {
+      const admissao = new Date(dataAdmissao);
+      const hoje = new Date();
+      const meses = Math.floor((hoje - admissao) / (1000 * 60 * 60 * 24 * 30.44));
+      if (meses < 1) return 'menos de 1 mês';
+      if (meses < 12) return `${meses} ${meses === 1 ? 'mês' : 'meses'}`;
+      const anos = Math.floor(meses / 12);
+      const mesesRest = meses % 12;
+      if (mesesRest === 0) return `${anos} ${anos === 1 ? 'ano' : 'anos'}`;
+      return `${anos} ${anos === 1 ? 'ano' : 'anos'} e ${mesesRest} ${mesesRest === 1 ? 'mês' : 'meses'}`;
+    }
+
     function badgeStatus(status) {
       const map = {
         'sem_antecipacao': ['badge-gray',  'Sem antecipação'],
@@ -343,7 +356,7 @@
 
         const tbody = document.getElementById('tbody-funcionarios');
         if (funcs.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:24px;">Nenhuma folha processada ainda.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray-400);padding:24px;">Nenhuma folha processada ainda.</td></tr>';
           return;
         }
 
@@ -355,6 +368,7 @@
             <td style="font-weight:600;color:${f.saldo_disponivel === 0 ? 'var(--red)' : 'var(--gray-800)'};">
               ${fmt(f.saldo_disponivel)}
             </td>
+            <td style="color:var(--gray-600);">${calcularTempoCasa(f.data_admissao)}</td>
             <td>${badgeStatus(f.status_antecipacao)}</td>
           </tr>
         `).join('');
@@ -372,7 +386,7 @@
         document.getElementById('bc-funcionario').textContent = f.nome;
         document.getElementById('detalhe-nome').textContent = f.nome;
         document.getElementById('detalhe-meta').textContent =
-          `CPF ${maskCpf(f.cpf)} · Admissão: ${f.data_admissao} · ${empresaAtual.nome}`;
+          `CPF ${maskCpf(f.cpf)} · Admissão: ${f.data_admissao} · ${calcularTempoCasa(f.data_admissao)} de casa · ${empresaAtual.nome}`;
 
         document.getElementById('d-teto').textContent = fmt(f.teto);
         document.getElementById('d-teto-sub').textContent = `40% de ${fmt(f.salario_liquido)}`;
