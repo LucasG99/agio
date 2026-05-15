@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ágio — Antecipação salarial</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="func-page">
+    <div class="func-shell">
+
+      <!-- ── SEÇÃO: ACESSO POR CPF ── -->
+      <div id="sec-acesso" class="acesso-body">
+        <div class="acesso-logo">
+          <h1>Ágio</h1>
+          <div class="empresa-nome" id="acesso-empresa-nome">Carregando...</div>
+          <div class="instrucao">Informe seu CPF para acessar</div>
+        </div>
+
+        <div id="erro-acesso" class="erro-msg hidden"></div>
+
+        <div class="form-group">
+          <label for="inp-cpf">CPF</label>
+          <input class="input" type="text" id="inp-cpf"
+            placeholder="000.000.000-00" maxlength="14"
+            style="text-align:center;font-size:18px;letter-spacing:0.1em;font-family:monospace;">
+        </div>
+
+        <button class="btn btn-primary btn-full" id="btn-acessar" style="margin-top:8px;">
+          Acessar
+        </button>
+
+        <div class="acesso-dica">
+          Seu CPF foi cadastrado pelo seu empregador. Nenhum cadastro necessário.
+        </div>
+      </div>
+
+      <!-- ── SEÇÃO: DASHBOARD ── -->
+      <div id="sec-dashboard" class="hidden">
+        <div class="func-header">
+          <div class="empresa" id="dash-empresa"></div>
+          <div class="saudacao" id="dash-saudacao"></div>
+          <div class="saldo-card">
+            <div class="label">Seu saldo disponível</div>
+            <div class="valor" id="dash-saldo"></div>
+            <div class="sub" id="dash-saldo-sub"></div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="dash-progress"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="func-body">
+          <button class="btn btn-primary btn-full" id="btn-solicitar">
+            Solicitar antecipação
+          </button>
+          <div style="font-size:11px;color:var(--gray-400);text-align:center;margin-top:8px;">
+            Taxa única de R$ 9,90 · Descontado na folha de pagamento
+          </div>
+
+          <div style="margin-top:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+              <div style="font-size:13px;font-weight:600;">Últimas antecipações</div>
+              <button onclick="irParaHistorico()" style="background:none;border:none;font-size:11px;color:var(--primary);cursor:pointer;">
+                Ver todas
+              </button>
+            </div>
+            <div id="dash-ultimas"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SEÇÃO: SOLICITAR ── -->
+      <div id="sec-solicitar" class="hidden">
+        <div class="func-nav-header">
+          <button class="back-btn" onclick="irParaDashboard()">‹</button>
+          <h2>Solicitar antecipação</h2>
+        </div>
+
+        <div style="padding:18px 20px;">
+          <div id="erro-solicitar" class="erro-msg hidden"></div>
+
+          <div class="form-group">
+            <label>Quanto você quer antecipar?</label>
+            <div class="valor-input-wrap">
+              <span class="prefix">R$</span>
+              <input type="number" id="inp-valor" placeholder="0,00" min="50" step="0.01">
+            </div>
+            <div class="valor-hint" id="hint-valor"></div>
+          </div>
+
+          <div class="resumo-box" id="resumo-box">
+            <h3>Resumo</h3>
+            <div class="resumo-row">
+              <span class="rl">Valor solicitado</span>
+              <span class="rr" id="res-valor">R$ 0,00</span>
+            </div>
+            <div class="resumo-row divisor">
+              <span class="rl">Taxa Ágio</span>
+              <span class="rr">R$ 9,90</span>
+            </div>
+            <div class="resumo-row destaque">
+              <span class="rl">Você vai receber</span>
+              <span class="rr" id="res-receber">R$ 0,00</span>
+            </div>
+            <div class="resumo-row destaque">
+              <span class="rl">Desconto na folha</span>
+              <span class="rr" id="res-desconto">R$ 9,90</span>
+            </div>
+            <div class="resumo-nota">A taxa não é descontada do valor recebido — vai na folha.</div>
+          </div>
+
+          <button class="btn btn-primary btn-full" id="btn-confirmar">Confirmar</button>
+          <button class="link-cancel" onclick="irParaDashboard()">Cancelar</button>
+        </div>
+      </div>
+
+      <!-- ── SEÇÃO: SUCESSO ── -->
+      <div id="sec-sucesso" class="hidden">
+        <div class="sucesso-box">
+          <div class="icone">✅</div>
+          <h2>Antecipação solicitada!</h2>
+          <p id="sucesso-msg"></p>
+          <button class="btn btn-primary" style="margin-top:24px;" onclick="irParaDashboard()">
+            Voltar ao início
+          </button>
+        </div>
+      </div>
+
+      <!-- ── SEÇÃO: HISTÓRICO ── -->
+      <div id="sec-historico" class="hidden">
+        <div class="func-nav-header">
+          <button class="back-btn" onclick="irParaDashboard()">‹</button>
+          <h2>Histórico</h2>
+        </div>
+        <div style="padding:14px 20px;" id="historico-lista"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // ── Estado ──
+    const params = new URLSearchParams(window.location.search);
+    const empresaId = params.get('empresa_id') || 1;
+
+    let funcionarioData = null;
+
+    // ── Init ──
+    carregarNomeEmpresa();
+
+    async function carregarNomeEmpresa() {
+      try {
+        const res = await fetch(`/api/empresas/${empresaId}`);
+        const emp = await res.json();
+        document.getElementById('acesso-empresa-nome').textContent = emp.nome;
+      } catch {
+        document.getElementById('acesso-empresa-nome').textContent = 'Sua empresa';
+      }
+    }
+
+    // ── Formatação ──
+    function fmt(v) {
+      return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
+    }
+
+    function fmtData(str) {
+      if (!str) return '';
+      return str.substring(0, 10).split('-').reverse().join('/');
+    }
+
+    function badgeHtml(status) {
+      const map = {
+        aprovada:   ['badge-green', 'Aprovada'],
+        descontada: ['badge-gray',  'Descontada'],
+        cancelada:  ['badge-red',   'Cancelada'],
+      };
+      const [cls, label] = map[status] || ['badge-gray', status];
+      return `<span class="badge ${cls}">${label}</span>`;
+    }
+
+    // ── Navegação ──
+    function mostrarSecao(id) {
+      ['sec-acesso','sec-dashboard','sec-solicitar','sec-sucesso','sec-historico'].forEach(s => {
+        document.getElementById(s).classList.add('hidden');
+      });
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function irParaDashboard() {
+      atualizarDashboard();
+      mostrarSecao('sec-dashboard');
+    }
+
+    function irParaHistorico() {
+      renderHistorico();
+      mostrarSecao('sec-historico');
+    }
+
+    // ── Acesso por CPF ──
+    const inpCpf = document.getElementById('inp-cpf');
+
+    inpCpf.addEventListener('input', () => {
+      let v = inpCpf.value.replace(/\D/g, '').substring(0, 11);
+      if (v.length > 9)      v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+      else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+      else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+      inpCpf.value = v;
+    });
+
+    inpCpf.addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('btn-acessar').click();
+    });
+
+    document.getElementById('btn-acessar').addEventListener('click', async () => {
+      const cpf = inpCpf.value.trim();
+      const erroEl = document.getElementById('erro-acesso');
+
+      if (cpf.replace(/\D/g, '').length !== 11) {
+        erroEl.textContent = 'CPF inválido. Verifique e tente novamente.';
+        erroEl.classList.remove('hidden');
+        return;
+      }
+
+      erroEl.classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/acesso', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cpf, empresa_id: empresaId })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          erroEl.textContent = data.erro;
+          erroEl.classList.remove('hidden');
+          return;
+        }
+
+        funcionarioData = data;
+        atualizarDashboard();
+        mostrarSecao('sec-dashboard');
+      } catch {
+        erroEl.textContent = 'Não foi possível conectar ao servidor.';
+        erroEl.classList.remove('hidden');
+      }
+    });
+
+    // ── Dashboard ──
+    async function atualizarDashboard() {
+      if (!funcionarioData) return;
+
+      try {
+        const res = await fetch(`/api/acesso/${funcionarioData.id}`);
+        funcionarioData = await res.json();
+      } catch { /* usa dados em cache */ }
+
+      const { nome, teto, saldo_disponivel, ultimas_antecipacoes } = funcionarioData;
+      const empEl = document.getElementById('acesso-empresa-nome');
+
+      document.getElementById('dash-empresa').textContent =
+        empEl ? empEl.textContent : 'Sua empresa';
+      document.getElementById('dash-saudacao').textContent = `Olá, ${nome.split(' ')[0]}`;
+      document.getElementById('dash-saldo').textContent = fmt(saldo_disponivel);
+      document.getElementById('dash-saldo-sub').textContent =
+        `de ${fmt(teto)} no total`;
+
+      const pct = teto > 0 ? Math.round((saldo_disponivel / teto) * 100) : 0;
+      document.getElementById('dash-progress').style.width = pct + '%';
+
+      const btnSolicitar = document.getElementById('btn-solicitar');
+      btnSolicitar.disabled = saldo_disponivel <= 0;
+      if (saldo_disponivel <= 0) {
+        btnSolicitar.textContent = 'Limite esgotado';
+        btnSolicitar.style.opacity = '0.5';
+      } else {
+        btnSolicitar.textContent = 'Solicitar antecipação';
+        btnSolicitar.style.opacity = '1';
+      }
+
+      const ultimasEl = document.getElementById('dash-ultimas');
+      const lista = funcionarioData.ultimas_antecipacoes || funcionarioData.antecipacoes || [];
+      if (!lista || lista.length === 0) {
+        ultimasEl.innerHTML = '<div style="font-size:12px;color:var(--gray-400);padding:8px 0;">Nenhuma antecipação ainda.</div>';
+      } else {
+        ultimasEl.innerHTML = lista.slice(0, 3).map(a => `
+          <div class="trans-item">
+            <div class="trans-icon ${a.status}">↑</div>
+            <div class="trans-info">
+              <div class="valor">${fmt(a.valor)}</div>
+              <div class="meta">${fmtData(a.data_solicitacao)} · ${a.competencia || ''}</div>
+            </div>
+            ${badgeHtml(a.status)}
+          </div>
+        `).join('');
+      }
+    }
+
+    // ── Solicitar ──
+    document.getElementById('btn-solicitar').addEventListener('click', () => {
+      document.getElementById('erro-solicitar').classList.add('hidden');
+      document.getElementById('inp-valor').value = '';
+      document.getElementById('res-valor').textContent = 'R$ 0,00';
+      document.getElementById('res-receber').textContent = 'R$ 0,00';
+      document.getElementById('res-desconto').textContent = 'R$ 9,90';
+      document.getElementById('hint-valor').textContent =
+        `Máximo disponível: ${fmt(funcionarioData.saldo_disponivel)} · Mínimo: R$ 50,00`;
+      mostrarSecao('sec-solicitar');
+    });
+
+    document.getElementById('inp-valor').addEventListener('input', () => {
+      const v = parseFloat(document.getElementById('inp-valor').value) || 0;
+      document.getElementById('res-valor').textContent = fmt(v);
+      document.getElementById('res-receber').textContent = fmt(v);
+      document.getElementById('res-desconto').textContent = fmt(v + 9.90);
+    });
+
+    document.getElementById('btn-confirmar').addEventListener('click', async () => {
+      const valor = parseFloat(document.getElementById('inp-valor').value);
+      const erroEl = document.getElementById('erro-solicitar');
+      erroEl.classList.add('hidden');
+
+      if (!valor || isNaN(valor)) {
+        erroEl.textContent = 'Informe um valor.';
+        erroEl.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/antecipacoes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ funcionario_id: funcionarioData.id, valor })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          erroEl.textContent = data.erro;
+          erroEl.classList.remove('hidden');
+          return;
+        }
+
+        document.getElementById('sucesso-msg').textContent =
+          `${fmt(data.valor)} solicitado. O valor será depositado em até 1 dia útil. Taxa de R$ 9,90 descontada na folha.`;
+        mostrarSecao('sec-sucesso');
+      } catch {
+        erroEl.textContent = 'Erro ao processar solicitação.';
+        erroEl.classList.remove('hidden');
+      }
+    });
+
+    // ── Histórico ──
+    function renderHistorico() {
+      const lista = funcionarioData.antecipacoes || funcionarioData.ultimas_antecipacoes || [];
+      const el = document.getElementById('historico-lista');
+
+      if (!lista || lista.length === 0) {
+        el.innerHTML = '<div style="font-size:13px;color:var(--gray-400);padding:16px 0;">Você ainda não fez nenhuma antecipação.</div>';
+        return;
+      }
+
+      // Agrupa por competência
+      const grupos = {};
+      lista.forEach(a => {
+        const key = a.competencia || 'Sem competência';
+        if (!grupos[key]) grupos[key] = [];
+        grupos[key].push(a);
+      });
+
+      el.innerHTML = Object.entries(grupos).map(([comp, itens]) => {
+        const [ano, mes] = comp.split('-');
+        const meses = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                       'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+        const label = mes ? `${meses[parseInt(mes)]} ${ano}` : comp;
+
+        return `
+          <div class="trans-group-label">${label}</div>
+          ${itens.map(a => `
+            <div class="trans-item">
+              <div class="trans-icon ${a.status}">↑</div>
+              <div class="trans-info">
+                <div class="valor">${fmt(a.valor)}</div>
+                <div class="meta">${fmtData(a.data_solicitacao)} · Taxa R$ 9,90</div>
+              </div>
+              ${badgeHtml(a.status)}
+            </div>
+          `).join('')}
+        `;
+      }).join('');
+    }
+  </script>
+</body>
+</html>
