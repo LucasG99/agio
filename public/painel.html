@@ -7,462 +7,411 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <div class="painel-layout">
+<div class="painel-layout">
 
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="sidebar-logo">
-        <h2>Ágio</h2>
-        <p id="sidebar-nome">Carregando...</p>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h2>Ágio</h2>
+      <p id="sidebar-nome">Carregando...</p>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#" class="active" onclick="irParaEmpresas(); return false;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        Empresas
+      </a>
+      <a href="#" onclick="return false;" style="opacity:.5;cursor:default;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        Configurações
+      </a>
+    </nav>
+    <div class="sidebar-footer" id="sidebar-email"></div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main-content">
+
+    <!-- SEÇÃO: EMPRESAS -->
+    <section id="sec-empresas">
+      <div class="page-header">
+        <div>
+          <h1>Empresas</h1>
+          <p id="sub-empresas">Carregando...</p>
+        </div>
+        <button class="btn btn-primary" onclick="abrirModalEmpresa()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Cadastrar empresa
+        </button>
       </div>
-      <nav class="sidebar-nav">
-        <a href="#" class="active" id="nav-empresas" onclick="irParaEmpresas(); return false;">Empresas</a>
-      </nav>
-      <div class="sidebar-footer" id="sidebar-email"></div>
-    </aside>
 
-    <!-- Conteúdo principal -->
-    <main class="main-content">
-
-      <!-- ── SEÇÃO: EMPRESAS ── -->
-      <section id="sec-empresas">
-        <div class="page-header">
-          <div>
-            <h1>Empresas</h1>
-            <p id="sub-empresas">Carregando...</p>
-          </div>
-          <button class="btn btn-primary" onclick="abrirModalEmpresa()">+ Cadastrar empresa</button>
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="label">Funcionários ativos</div>
+          <div class="value" id="stat-funcionarios">—</div>
+          <div class="icon">👥</div>
         </div>
-
-        <div class="stats-row">
-          <div class="stat-card">
-            <div class="label">Funcionários ativos</div>
-            <div class="value" id="stat-funcionarios">—</div>
-          </div>
-          <div class="stat-card">
-            <div class="label">Antecipado este mês</div>
-            <div class="value" id="stat-antecipado">—</div>
-          </div>
-          <div class="stat-card">
-            <div class="label">Comissão estimada</div>
-            <div class="value" id="stat-comissao">—</div>
-          </div>
+        <div class="stat-card">
+          <div class="label">Antecipado este mês</div>
+          <div class="value" id="stat-antecipado">—</div>
+          <div class="icon">💸</div>
         </div>
-
-        <div id="lista-empresas"></div>
-      </section>
-
-      <!-- ── SEÇÃO: FUNCIONÁRIOS ── -->
-      <section id="sec-funcionarios" class="hidden">
-        <div class="breadcrumb">
-          <a href="#" onclick="irParaEmpresas(); return false;">Empresas</a>
-           › <span id="bc-empresa"></span>
+        <div class="stat-card">
+          <div class="label">Comissão estimada</div>
+          <div class="value" id="stat-comissao">—</div>
+          <div class="icon">📈</div>
         </div>
-        <div class="page-header">
-          <div>
-            <h1 id="titulo-empresa"></h1>
-            <p id="sub-empresa"></p>
-          </div>
-          <div style="display:flex;gap:8px;">
-            <button class="btn btn-secondary" onclick="abrirRelatorio()">Gerar relatório</button>
-            <button class="btn btn-primary" onclick="abrirModalUpload()">Upload de folha</button>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Nome</th>
-                <th>CPF</th>
-                <th>Salário líq.</th>
-                <th>Teto disp.</th>
-                <th>Tempo de casa</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-funcionarios"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- ── SEÇÃO: DETALHE DO FUNCIONÁRIO ── -->
-      <section id="sec-detalhe" class="hidden">
-        <div class="breadcrumb">
-          <a href="#" onclick="irParaEmpresas(); return false;">Empresas</a>
-           › <a href="#" onclick="irParaFuncionarios(); return false;" id="bc-empresa-detalhe"></a>
-           › <span id="bc-funcionario"></span>
-        </div>
-        <div class="page-header">
-          <div>
-            <h1 id="detalhe-nome"></h1>
-            <p id="detalhe-meta"></p>
-          </div>
-        </div>
-        <div class="stats-row" style="grid-template-columns: repeat(3,1fr);">
-          <div class="stat-card">
-            <div class="label">Teto total</div>
-            <div class="value" id="d-teto"></div>
-            <div style="font-size:11px;color:var(--gray-400);margin-top:2px;" id="d-teto-sub"></div>
-          </div>
-          <div class="stat-card">
-            <div class="label">Disponível agora</div>
-            <div class="value" id="d-saldo"></div>
-            <div style="font-size:11px;color:var(--gray-400);margin-top:2px;" id="d-saldo-sub"></div>
-          </div>
-          <div class="stat-card">
-            <div class="label">Antecipado no ciclo</div>
-            <div class="value" id="d-total"></div>
-          </div>
-        </div>
-        <h2 style="font-size:14px;font-weight:600;margin-bottom:12px;">Histórico de antecipações</h2>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Data</th>
-                <th>Competência</th>
-                <th>Valor</th>
-                <th>Taxa</th>
-                <th>A descontar</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-detalhe"></tbody>
-          </table>
-        </div>
-      </section>
-
-    </main>
-  </div>
-
-  <!-- Modal: Cadastrar empresa -->
-  <div id="modal-empresa" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:100;">
-    <div class="card" style="width:400px;">
-      <h2 style="font-size:16px;font-weight:600;margin-bottom:20px;">Cadastrar empresa</h2>
-      <div id="erro-empresa" class="erro-msg hidden"></div>
-      <div class="form-group">
-        <label>Nome da empresa</label>
-        <input class="input" id="inp-emp-nome" placeholder="Padaria Flores Ltda.">
       </div>
-      <div class="form-group">
-        <label>CNPJ</label>
-        <input class="input" id="inp-emp-cnpj" placeholder="00.000.000/0001-00">
+
+      <div id="lista-empresas"></div>
+    </section>
+
+    <!-- SEÇÃO: FUNCIONÁRIOS -->
+    <section id="sec-funcionarios" class="hidden">
+      <div class="breadcrumb">
+        <a href="#" onclick="irParaEmpresas(); return false;">Empresas</a>
+        &nbsp;›&nbsp;<span id="bc-empresa"></span>
       </div>
-      <div style="display:flex;gap:8px;margin-top:4px;">
-        <button class="btn btn-secondary" style="flex:1;" onclick="fecharModal('modal-empresa')">Cancelar</button>
-        <button class="btn btn-primary" style="flex:1;" onclick="salvarEmpresa()">Cadastrar</button>
+      <div class="page-header">
+        <div>
+          <h1 id="titulo-empresa"></h1>
+          <p id="sub-empresa"></p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary" onclick="abrirRelatorio()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Gerar relatório
+          </button>
+          <button class="btn btn-primary" onclick="abrirModalUpload()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+            Upload de folha
+          </button>
+        </div>
       </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th><th>CPF</th><th>Salário líq.</th>
+              <th>Teto disp.</th><th>Tempo de casa</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-funcionarios"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SEÇÃO: DETALHE -->
+    <section id="sec-detalhe" class="hidden">
+      <div class="breadcrumb">
+        <a href="#" onclick="irParaEmpresas(); return false;">Empresas</a>
+        &nbsp;›&nbsp;
+        <a href="#" onclick="irParaFuncionarios(); return false;" id="bc-empresa-detalhe"></a>
+        &nbsp;›&nbsp;<span id="bc-funcionario"></span>
+      </div>
+      <div class="page-header">
+        <div>
+          <h1 id="detalhe-nome"></h1>
+          <p id="detalhe-meta"></p>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="label">Teto total</div>
+          <div class="value" id="d-teto"></div>
+          <div style="font-size:11px;color:var(--n400);margin-top:3px;" id="d-teto-sub"></div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Disponível agora</div>
+          <div class="value" id="d-saldo"></div>
+          <div style="font-size:11px;color:var(--n400);margin-top:3px;" id="d-saldo-sub"></div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Antecipado no ciclo</div>
+          <div class="value" id="d-total"></div>
+        </div>
+      </div>
+      <h2 style="font-family:var(--fd);font-size:15px;font-weight:700;margin-bottom:12px;letter-spacing:-.2px;">Histórico de antecipações</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Data</th><th>Competência</th><th>Valor</th><th>Taxa</th><th>A descontar</th><th>Status</th></tr>
+          </thead>
+          <tbody id="tbody-detalhe"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Modal: Cadastrar empresa -->
+<div id="modal-empresa" class="hidden modal-overlay">
+  <div class="modal-box" style="width:400px;">
+    <h2>Cadastrar empresa</h2>
+    <div id="erro-empresa" class="erro-msg hidden"></div>
+    <div class="form-group">
+      <label>Nome da empresa</label>
+      <input class="input" id="inp-emp-nome" placeholder="Padaria Flores Ltda.">
+    </div>
+    <div class="form-group">
+      <label>CNPJ</label>
+      <input class="input" id="inp-emp-cnpj" placeholder="00.000.000/0001-00">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="fecharModal('modal-empresa')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="salvarEmpresa()">Cadastrar</button>
     </div>
   </div>
+</div>
 
-  <!-- Modal: Upload de folha -->
-  <div id="modal-upload" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:100;">
-    <div class="card" style="width:420px;">
-      <h2 style="font-size:16px;font-weight:600;margin-bottom:20px;">Upload de folha</h2>
-      <div id="erro-upload" class="erro-msg hidden"></div>
-      <div class="form-group">
-        <label>Competência (mês/ano)</label>
-        <input class="input" id="inp-competencia" placeholder="2026-05">
-      </div>
-      <div class="form-group">
-        <label>Arquivo CSV</label>
-        <input class="input" type="file" id="inp-arquivo" accept=".csv">
-      </div>
-      <div style="font-size:11px;color:var(--gray-400);margin-bottom:16px;">
-        Colunas obrigatórias: cpf, nome, salario_liquido, data_admissao
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-secondary" style="flex:1;" onclick="fecharModal('modal-upload')">Cancelar</button>
-        <button class="btn btn-primary" style="flex:1;" onclick="enviarUpload()">Enviar</button>
-      </div>
+<!-- Modal: Upload de folha -->
+<div id="modal-upload" class="hidden modal-overlay">
+  <div class="modal-box" style="width:420px;">
+    <h2>Upload de folha</h2>
+    <div id="erro-upload" class="erro-msg hidden"></div>
+    <div class="form-group">
+      <label>Competência (mês/ano)</label>
+      <input class="input" id="inp-competencia" placeholder="2026-05">
+    </div>
+    <div class="form-group">
+      <label>Arquivo CSV</label>
+      <input class="input" type="file" id="inp-arquivo" accept=".csv">
+    </div>
+    <div style="font-size:11.5px;color:var(--n400);margin-bottom:18px;padding:10px 12px;background:var(--n50);border-radius:var(--r8);">
+      Colunas obrigatórias: <code>cpf, nome, salario_liquido, data_admissao</code>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="fecharModal('modal-upload')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="enviarUpload()">Enviar</button>
     </div>
   </div>
+</div>
 
-  <script>
-    // ── Estado ──
-    const escritorioId = localStorage.getItem('escritorio_id');
-    const escritorioNome = localStorage.getItem('escritorio_nome');
-    const escritorioEmail = localStorage.getItem('escritorio_email');
+<script>
+  const escritorioId   = localStorage.getItem('escritorio_id');
+  const escritorioNome = localStorage.getItem('escritorio_nome');
+  const escritorioEmail= localStorage.getItem('escritorio_email');
 
-    if (!escritorioId) window.location.href = '/';
+  if (!escritorioId) window.location.href = '/';
 
-    let empresaAtual = null;
-    let empresas = [];
+  let empresaAtual = null;
+  let empresas = [];
 
-    // ── Init ──
-    document.getElementById('sidebar-nome').textContent = escritorioNome;
-    document.getElementById('sidebar-email').textContent = escritorioEmail;
+  document.getElementById('sidebar-nome').textContent  = escritorioNome;
+  document.getElementById('sidebar-email').textContent = escritorioEmail;
 
-    carregarEmpresas();
+  carregarEmpresas();
 
-    // ── Navegação ──
-    function mostrarSecao(id) {
-      ['sec-empresas', 'sec-funcionarios', 'sec-detalhe'].forEach(s => {
-        document.getElementById(s).classList.add('hidden');
-      });
-      document.getElementById(id).classList.remove('hidden');
-    }
+  // ── Navegação ──
+  function mostrarSecao(id) {
+    ['sec-empresas','sec-funcionarios','sec-detalhe'].forEach(s =>
+      document.getElementById(s).classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+  }
 
-    function irParaEmpresas() {
-      mostrarSecao('sec-empresas');
-      empresaAtual = null;
-    }
+  function irParaEmpresas() { mostrarSecao('sec-empresas'); empresaAtual = null; }
+  function irParaFuncionarios() {
+    if (!empresaAtual) return;
+    mostrarSecao('sec-funcionarios');
+    carregarFuncionarios(empresaAtual.id);
+  }
 
-    function irParaFuncionarios() {
-      if (!empresaAtual) return;
-      mostrarSecao('sec-funcionarios');
-      carregarFuncionarios(empresaAtual.id);
-    }
+  // ── Helpers ──
+  function fmt(v) { return 'R$ ' + Number(v).toFixed(2).replace('.',','); }
+  function maskCpf(c) { return c.replace(/(\d{3})\.(\d{3})\.(\d{3})-(\d{2})/, '***.$2.$3-**'); }
 
-    // ── Helpers ──
-    function fmt(valor) {
-      return 'R$ ' + Number(valor).toFixed(2).replace('.', ',');
-    }
+  function calcularTempoCasa(d) {
+    const m = Math.floor((new Date() - new Date(d)) / (1000*60*60*24*30.44));
+    if (m < 1) return 'menos de 1 mês';
+    if (m < 12) return `${m} ${m===1?'mês':'meses'}`;
+    const a = Math.floor(m/12), r = m%12;
+    return r===0 ? `${a} ${a===1?'ano':'anos'}` : `${a} ${a===1?'ano':'anos'} e ${r} ${r===1?'mês':'meses'}`;
+  }
 
-    function maskCpf(cpf) {
-      return cpf.replace(/(\d{3})\.(\d{3})\.(\d{3})-(\d{2})/, '***.$2.$3-**');
-    }
+  function badgeStatus(s) {
+    const map = {
+      'sem_antecipacao':['badge-gray','Sem antecipação'],
+      'com_antecipacao':['badge-blue','Com antecipação'],
+      'limite_esgotado':['badge-red','Limite esgotado'],
+      'aprovada':['badge-green','Aprovada'],
+      'descontada':['badge-gray','Descontada'],
+      'cancelada':['badge-red','Cancelada'],
+    };
+    const [cls,label] = map[s]||['badge-gray',s];
+    return `<span class="badge ${cls}">${label}</span>`;
+  }
 
-    function calcularTempoCasa(dataAdmissao) {
-      const admissao = new Date(dataAdmissao);
-      const hoje = new Date();
-      const meses = Math.floor((hoje - admissao) / (1000 * 60 * 60 * 24 * 30.44));
-      if (meses < 1) return 'menos de 1 mês';
-      if (meses < 12) return `${meses} ${meses === 1 ? 'mês' : 'meses'}`;
-      const anos = Math.floor(meses / 12);
-      const mesesRest = meses % 12;
-      if (mesesRest === 0) return `${anos} ${anos === 1 ? 'ano' : 'anos'}`;
-      return `${anos} ${anos === 1 ? 'ano' : 'anos'} e ${mesesRest} ${mesesRest === 1 ? 'mês' : 'meses'}`;
-    }
+  function fecharModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-    function badgeStatus(status) {
-      const map = {
-        'sem_antecipacao': ['badge-gray',  'Sem antecipação'],
-        'com_antecipacao': ['badge-blue',  'Com antecipação'],
-        'limite_esgotado': ['badge-red',   'Limite esgotado'],
-        'aprovada':        ['badge-green', 'Aprovada'],
-        'descontada':      ['badge-gray',  'Descontada'],
-        'cancelada':       ['badge-red',   'Cancelada'],
-      };
-      const [cls, label] = map[status] || ['badge-gray', status];
-      return `<span class="badge ${cls}">${label}</span>`;
-    }
+  function abrirModalEmpresa() {
+    document.getElementById('inp-emp-nome').value = '';
+    document.getElementById('inp-emp-cnpj').value = '';
+    document.getElementById('erro-empresa').classList.add('hidden');
+    document.getElementById('modal-empresa').classList.remove('hidden');
+  }
 
-    function fecharModal(id) {
-      document.getElementById(id).classList.add('hidden');
-    }
+  function abrirModalUpload() {
+    document.getElementById('inp-competencia').value = '';
+    document.getElementById('inp-arquivo').value = '';
+    document.getElementById('erro-upload').classList.add('hidden');
+    document.getElementById('modal-upload').classList.remove('hidden');
+  }
 
-    function abrirModalEmpresa() {
-      document.getElementById('inp-emp-nome').value = '';
-      document.getElementById('inp-emp-cnpj').value = '';
-      document.getElementById('erro-empresa').classList.add('hidden');
-      document.getElementById('modal-empresa').classList.remove('hidden');
-    }
+  // Avatar da empresa
+  const AVATAR_COLORS = [
+    {bg:'#E8F5F0',fg:'#1A5C43'},{bg:'#EFF6FF',fg:'#1D4ED8'},
+    {bg:'#FEF9E7',fg:'#8B6914'},{bg:'#F5F0FF',fg:'#5B21B6'},
+    {bg:'#FFF0F5',fg:'#9B1550'},{bg:'#F0F7FF',fg:'#0369A1'},
+  ];
+  function avatarColor(nome) { return AVATAR_COLORS[nome.charCodeAt(0) % AVATAR_COLORS.length]; }
 
-    function abrirModalUpload() {
-      document.getElementById('inp-competencia').value = '';
-      document.getElementById('inp-arquivo').value = '';
-      document.getElementById('erro-upload').classList.add('hidden');
-      document.getElementById('modal-upload').classList.remove('hidden');
-    }
+  // ── Empresas ──
+  async function carregarEmpresas() {
+    try {
+      const res = await fetch(`/api/empresas?escritorio_id=${escritorioId}`);
+      empresas = await res.json();
 
-    // ── Empresas ──
-    async function carregarEmpresas() {
-      try {
-        const res = await fetch(`/api/empresas?escritorio_id=${escritorioId}`);
-        empresas = await res.json();
+      document.getElementById('sub-empresas').textContent =
+        `${empresas.length} empresa${empresas.length!==1?'s':''} ativa${empresas.length!==1?'s':''}`;
 
-        document.getElementById('sub-empresas').textContent =
-          `${empresas.length} empresa${empresas.length !== 1 ? 's' : ''} ativa${empresas.length !== 1 ? 's' : ''}`;
+      const totalFunc = empresas.reduce((s,e) => s+e.total_funcionarios, 0);
+      const totalAnt  = empresas.reduce((s,e) => s+e.total_antecipado_mes, 0);
 
-        const totalFunc = empresas.reduce((s, e) => s + e.total_funcionarios, 0);
-        const totalAnt  = empresas.reduce((s, e) => s + e.total_antecipado_mes, 0);
-        const comissao  = totalAnt * 0.25;
+      document.getElementById('stat-funcionarios').textContent = totalFunc;
+      document.getElementById('stat-antecipado').textContent   = fmt(totalAnt);
+      document.getElementById('stat-comissao').textContent     = fmt(totalAnt*0.25);
 
-        document.getElementById('stat-funcionarios').textContent = totalFunc;
-        document.getElementById('stat-antecipado').textContent   = fmt(totalAnt);
-        document.getElementById('stat-comissao').textContent     = fmt(comissao);
-
-        const lista = document.getElementById('lista-empresas');
-        lista.innerHTML = empresas.map(e => `
+      document.getElementById('lista-empresas').innerHTML = empresas.map(e => {
+        const c = avatarColor(e.nome);
+        return `
           <div class="empresa-card" onclick="selecionarEmpresa(${e.id})">
-            <div>
+            <div class="empresa-avatar" style="background:${c.bg};color:${c.fg};">${e.nome.charAt(0)}</div>
+            <div class="empresa-info">
               <div class="empresa-nome">${e.nome}</div>
               <div class="empresa-cnpj">${e.cnpj}</div>
             </div>
             <div class="empresa-right">
               <div class="empresa-stats">
                 <div class="sub">${e.total_funcionarios} funcionários</div>
-                <div class="num">${fmt(e.total_antecipado_mes)} antecipado</div>
+                <div class="num">${fmt(e.total_antecipado_mes)}</div>
               </div>
-              <span class="badge badge-green">Folha processada</span>
-              <span style="color:var(--gray-400);font-size:16px;">›</span>
+              <span class="badge badge-green">Processada</span>
+              <span class="empresa-arrow">›</span>
             </div>
-          </div>
-        `).join('');
-      } catch (err) {
-        console.error(err);
-      }
-    }
+          </div>`;
+      }).join('');
+    } catch(err) { console.error(err); }
+  }
 
-    async function selecionarEmpresa(id) {
-      empresaAtual = empresas.find(e => e.id === id);
-      document.getElementById('bc-empresa').textContent = empresaAtual.nome;
-      document.getElementById('bc-empresa-detalhe').textContent = empresaAtual.nome;
-      document.getElementById('titulo-empresa').textContent = empresaAtual.nome;
-      mostrarSecao('sec-funcionarios');
-      carregarFuncionarios(id);
-    }
+  async function selecionarEmpresa(id) {
+    empresaAtual = empresas.find(e => e.id===id);
+    document.getElementById('bc-empresa').textContent       = empresaAtual.nome;
+    document.getElementById('bc-empresa-detalhe').textContent = empresaAtual.nome;
+    document.getElementById('titulo-empresa').textContent   = empresaAtual.nome;
+    mostrarSecao('sec-funcionarios');
+    carregarFuncionarios(id);
+  }
 
-    async function salvarEmpresa() {
-      const nome = document.getElementById('inp-emp-nome').value.trim();
-      const cnpj = document.getElementById('inp-emp-cnpj').value.trim();
-      const erroEl = document.getElementById('erro-empresa');
+  async function salvarEmpresa() {
+    const nome = document.getElementById('inp-emp-nome').value.trim();
+    const cnpj = document.getElementById('inp-emp-cnpj').value.trim();
+    const erroEl = document.getElementById('erro-empresa');
+    if (!nome||!cnpj) { erroEl.textContent='Nome e CNPJ são obrigatórios.'; erroEl.classList.remove('hidden'); return; }
+    try {
+      const res = await fetch('/api/empresas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({escritorio_id:escritorioId,nome,cnpj})});
+      const data = await res.json();
+      if (!res.ok) { erroEl.textContent=data.erro; erroEl.classList.remove('hidden'); return; }
+      fecharModal('modal-empresa');
+      carregarEmpresas();
+    } catch { erroEl.textContent='Erro ao cadastrar empresa.'; erroEl.classList.remove('hidden'); }
+  }
 
-      if (!nome || !cnpj) {
-        erroEl.textContent = 'Nome e CNPJ são obrigatórios.';
-        erroEl.classList.remove('hidden');
+  // ── Funcionários ──
+  async function carregarFuncionarios(empresaId) {
+    try {
+      const res = await fetch(`/api/funcionarios?empresa_id=${empresaId}`);
+      const funcs = await res.json();
+      document.getElementById('sub-empresa').textContent =
+        `${funcs.length} funcionário${funcs.length!==1?'s':''} ativo${funcs.length!==1?'s':''}`;
+      const tbody = document.getElementById('tbody-funcionarios');
+      if (!funcs.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--n400);padding:32px;">Nenhuma folha processada ainda.</td></tr>';
         return;
       }
+      tbody.innerHTML = funcs.map(f => `
+        <tr onclick="abrirDetalhe(${f.id})">
+          <td style="font-weight:600;">${f.nome}</td>
+          <td style="color:var(--n400);font-family:monospace;font-size:11.5px;">${maskCpf(f.cpf)}</td>
+          <td>${fmt(f.salario_liquido)}</td>
+          <td style="font-weight:700;color:${f.saldo_disponivel===0?'var(--err-fg)':'var(--n900)'};">${fmt(f.saldo_disponivel)}</td>
+          <td style="color:var(--n500);">${calcularTempoCasa(f.data_admissao)}</td>
+          <td>${badgeStatus(f.status_antecipacao)}</td>
+        </tr>`).join('');
+    } catch(err) { console.error(err); }
+  }
 
-      try {
-        const res = await fetch('/api/empresas', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ escritorio_id: escritorioId, nome, cnpj })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          erroEl.textContent = data.erro;
-          erroEl.classList.remove('hidden');
-          return;
-        }
-        fecharModal('modal-empresa');
-        carregarEmpresas();
-      } catch (err) {
-        erroEl.textContent = 'Erro ao cadastrar empresa.';
-        erroEl.classList.remove('hidden');
+  // ── Detalhe ──
+  async function abrirDetalhe(funcId) {
+    try {
+      const res = await fetch(`/api/funcionarios/${funcId}`);
+      const f = await res.json();
+      document.getElementById('bc-funcionario').textContent = f.nome;
+      document.getElementById('detalhe-nome').textContent   = f.nome;
+      document.getElementById('detalhe-meta').textContent   =
+        `CPF ${maskCpf(f.cpf)} · Admissão: ${f.data_admissao} · ${calcularTempoCasa(f.data_admissao)} de casa · ${empresaAtual.nome}`;
+      document.getElementById('d-teto').textContent     = fmt(f.teto);
+      document.getElementById('d-teto-sub').textContent  = `40% de ${fmt(f.salario_liquido)}`;
+      document.getElementById('d-saldo').textContent    = fmt(f.saldo_disponivel);
+      document.getElementById('d-saldo-sub').textContent = `${fmt(f.teto-f.saldo_disponivel)} em aberto`;
+      document.getElementById('d-total').textContent    = fmt(f.total_antecipado_ciclo_atual);
+      const tbody = document.getElementById('tbody-detalhe');
+      if (!f.antecipacoes?.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--n400);padding:32px;">Nenhuma antecipação ainda.</td></tr>';
+      } else {
+        tbody.innerHTML = f.antecipacoes.map(a => `
+          <tr>
+            <td style="color:var(--n600);">${a.data_solicitacao.substring(0,10)}</td>
+            <td>${a.competencia}</td>
+            <td style="font-weight:700;">${fmt(a.valor)}</td>
+            <td style="color:var(--n400);">${fmt(a.taxa)}</td>
+            <td>${fmt(a.valor+a.taxa)}</td>
+            <td>${badgeStatus(a.status)}</td>
+          </tr>`).join('');
       }
-    }
+      mostrarSecao('sec-detalhe');
+    } catch(err) { console.error(err); }
+  }
 
-    // ── Funcionários ──
-    async function carregarFuncionarios(empresaId) {
-      try {
-        const res = await fetch(`/api/funcionarios?empresa_id=${empresaId}`);
-        const funcs = await res.json();
+  // ── Upload ──
+  async function enviarUpload() {
+    const competencia = document.getElementById('inp-competencia').value.trim();
+    const arquivo     = document.getElementById('inp-arquivo').files[0];
+    const erroEl      = document.getElementById('erro-upload');
+    if (!competencia||!arquivo) { erroEl.textContent='Competência e arquivo são obrigatórios.'; erroEl.classList.remove('hidden'); return; }
+    const fd = new FormData();
+    fd.append('empresa_id', empresaAtual.id);
+    fd.append('competencia', competencia);
+    fd.append('arquivo', arquivo);
+    try {
+      const res = await fetch('/api/ciclos/upload',{method:'POST',body:fd});
+      const data = await res.json();
+      if (!res.ok) { erroEl.textContent=data.erro; erroEl.classList.remove('hidden'); return; }
+      fecharModal('modal-upload');
+      alert(`Folha importada.\n${data.novos} novos · ${data.atualizados} atualizados · ${data.ignorados} ignorados`);
+      carregarFuncionarios(empresaAtual.id);
+    } catch { erroEl.textContent='Erro ao enviar arquivo.'; erroEl.classList.remove('hidden'); }
+  }
 
-        document.getElementById('sub-empresa').textContent =
-          `${funcs.length} funcionário${funcs.length !== 1 ? 's' : ''} ativo${funcs.length !== 1 ? 's' : ''}`;
-
-        const tbody = document.getElementById('tbody-funcionarios');
-        if (funcs.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray-400);padding:24px;">Nenhuma folha processada ainda.</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = funcs.map(f => `
-          <tr onclick="abrirDetalhe(${f.id})">
-            <td style="font-weight:500;">${f.nome}</td>
-            <td style="color:var(--gray-400);font-family:monospace;font-size:11px;">${maskCpf(f.cpf)}</td>
-            <td>${fmt(f.salario_liquido)}</td>
-            <td style="font-weight:600;color:${f.saldo_disponivel === 0 ? 'var(--red)' : 'var(--gray-800)'};">
-              ${fmt(f.saldo_disponivel)}
-            </td>
-            <td style="color:var(--gray-600);">${calcularTempoCasa(f.data_admissao)}</td>
-            <td>${badgeStatus(f.status_antecipacao)}</td>
-          </tr>
-        `).join('');
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    // ── Detalhe ──
-    async function abrirDetalhe(funcId) {
-      try {
-        const res = await fetch(`/api/funcionarios/${funcId}`);
-        const f = await res.json();
-
-        document.getElementById('bc-funcionario').textContent = f.nome;
-        document.getElementById('detalhe-nome').textContent = f.nome;
-        document.getElementById('detalhe-meta').textContent =
-          `CPF ${maskCpf(f.cpf)} · Admissão: ${f.data_admissao} · ${calcularTempoCasa(f.data_admissao)} de casa · ${empresaAtual.nome}`;
-
-        document.getElementById('d-teto').textContent = fmt(f.teto);
-        document.getElementById('d-teto-sub').textContent = `40% de ${fmt(f.salario_liquido)}`;
-        document.getElementById('d-saldo').textContent = fmt(f.saldo_disponivel);
-        document.getElementById('d-saldo-sub').textContent =
-          `${fmt(f.teto - f.saldo_disponivel)} em aberto`;
-        document.getElementById('d-total').textContent = fmt(f.total_antecipado_ciclo_atual);
-
-        const tbody = document.getElementById('tbody-detalhe');
-        if (!f.antecipacoes || f.antecipacoes.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray-400);padding:24px;">Nenhuma antecipação ainda.</td></tr>';
-        } else {
-          tbody.innerHTML = f.antecipacoes.map(a => `
-            <tr>
-              <td style="color:var(--gray-600);">${a.data_solicitacao.substring(0,10)}</td>
-              <td>${a.competencia}</td>
-              <td style="font-weight:600;">${fmt(a.valor)}</td>
-              <td style="color:var(--gray-400);">${fmt(a.taxa)}</td>
-              <td>${fmt(a.valor + a.taxa)}</td>
-              <td>${badgeStatus(a.status)}</td>
-            </tr>
-          `).join('');
-        }
-
-        mostrarSecao('sec-detalhe');
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    // ── Upload ──
-    async function enviarUpload() {
-      const competencia = document.getElementById('inp-competencia').value.trim();
-      const arquivo = document.getElementById('inp-arquivo').files[0];
-      const erroEl = document.getElementById('erro-upload');
-
-      if (!competencia || !arquivo) {
-        erroEl.textContent = 'Competência e arquivo são obrigatórios.';
-        erroEl.classList.remove('hidden');
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('empresa_id', empresaAtual.id);
-      formData.append('competencia', competencia);
-      formData.append('arquivo', arquivo);
-
-      try {
-        const res = await fetch('/api/ciclos/upload', { method: 'POST', body: formData });
-        const data = await res.json();
-        if (!res.ok) {
-          erroEl.textContent = data.erro;
-          erroEl.classList.remove('hidden');
-          return;
-        }
-        fecharModal('modal-upload');
-        alert(`Folha importada.\n${data.novos} novos · ${data.atualizados} atualizados · ${data.ignorados} ignorados`);
-        carregarFuncionarios(empresaAtual.id);
-      } catch (err) {
-        erroEl.textContent = 'Erro ao enviar arquivo.';
-        erroEl.classList.remove('hidden');
-      }
-    }
-
-    // ── Relatório ──
-    async function abrirRelatorio() {
-      try {
-        const res = await fetch(`/api/ciclos?empresa_id=${empresaAtual.id}`);
-        const ciclos = await res.json();
-        const ativo = ciclos.find(c => c.status === 'processada');
-        if (!ativo) { alert('Nenhum ciclo ativo encontrado.'); return; }
-        window.open(`/api/relatorio?empresa_id=${empresaAtual.id}&ciclo_id=${ativo.id}`, '_blank');
-      } catch (err) {
-        alert('Erro ao gerar relatório.');
-      }
-    }
-  </script>
+  // ── Relatório ──
+  async function abrirRelatorio() {
+    try {
+      const res = await fetch(`/api/ciclos?empresa_id=${empresaAtual.id}`);
+      const ciclos = await res.json();
+      const ativo = ciclos.find(c => c.status==='processada');
+      if (!ativo) { alert('Nenhum ciclo ativo encontrado.'); return; }
+      window.open(`/api/relatorio?empresa_id=${empresaAtual.id}&ciclo_id=${ativo.id}`,'_blank');
+    } catch { alert('Erro ao gerar relatório.'); }
+  }
+</script>
 </body>
 </html>

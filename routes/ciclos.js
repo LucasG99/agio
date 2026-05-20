@@ -49,7 +49,8 @@ router.post('/upload', upload.single('arquivo'), (req, res) => {
 
     let linhas;
     try {
-      linhas = parse(conteudo, { columns: true, skip_empty_lines: true, trim: true });
+      const delimiter = conteudo.split('\n')[0].includes(';') ? ';' : ',';
+      linhas = parse(conteudo, { columns: true, skip_empty_lines: true, trim: true, delimiter });
     } catch (e) {
       return res.status(400).json({ erro: 'Erro ao processar CSV: ' + e.message });
     }
