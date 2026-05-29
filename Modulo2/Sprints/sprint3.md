@@ -193,3 +193,20 @@ What the scenarios reveal is the business's sensitivity to execution. The distan
 
 No projection is reality, and listing what it leaves out is part of using it honestly. The 30% activation is the most fragile assumption, because it comes from operations in companies with quite different profiles from the SMEs Ágio targets, not primary data with the target population, which only comes in Sprint 4. FIDC capital cost depends on QI Tech confirmation, still pending. The accounting firm acquisition curve assumes a pace that no real conversation has yet validated. And the terminal value, however conservative the multiple, rests on the hypothesis that the operation stays healthy beyond the modeled horizon. Each of these hypotheses is a point where the spreadsheet might be wrong, and having them explicit is what lets you know where to look when reality starts diverging from the model. The spreadsheet isn't a promise. It's an instrument for discovering, as early as possible, which assumption doesn't hold.
 
+# Field Work — Outreach to Accounting Firms
+
+This sprint's field work tested two approaches to prospecting accounting firms: cold outreach via Google Maps and personal network activation. The results confirmed the operational hypothesis that the accounting channel has a long acquisition cycle and that an existing relationship network is significantly more efficient as an entry point than unqualified outreach.
+
+## Method 1 — Google Maps
+
+Twenty-one accounting firms were identified and contacted via Google Maps, using as filtering criteria the presence of client reviews, an active address, and a description mentioning payroll department or payroll management. Contact was made via WhatsApp or public email, with a direct message describing Ágio and requesting a fifteen-minute conversation. Two responded, a return rate of approximately 9%. Neither resulted in a meeting: one stated it didn't serve the company profile the product targets, and the other didn't respond to follow-up. The remaining nineteen didn't respond or blocked contact.
+
+## Method 2 — Personal Network
+
+Seven people from the personal network were approached with a request for referral or introduction to accounting firms with whom they had direct contact. Four responded with some engagement, a return rate of 57%. Two referrals resulted in confirmed meetings for Sprint 4. One is with an accounting firm in Ponta Grossa that handles complete payroll management and all accounting operations for a company whose partner is a member of the personal network. The second is with an accounting firm in the São Paulo area, also referred through direct contact.
+
+## Reading the Results
+
+The difference between 9% return on cold outreach and 57% via network is not surprising, and is consistent with Ágio's operational model. An accounting firm has no reason to engage with a cold message from an unknown product. Introduction through an existing client or partner resolves the trust problem that cold outreach cannot. The practical implication for expansion is that the acquisition strategy for the first ten accounting firms will need to rely more on mapping the existing network and chain referrals than on direct prospecting via directory, at least until Ágio has documented use cases that function as social proof in cold approaches.
+
+The two confirmed meetings are the main deliverable of this sprint. The objective of each conversation is to validate the model's central operational assumptions: whether the accounting firm sees value in the proposition, what the actual resistance to onboarding looks like, and whether the 25% per-transaction commission is sufficient to generate active interest in distribution. The results will feed directly into Sprint 4.
