@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
-const TAXA = 9.90;
+const TAXA_PERCENTUAL = 0.099;
+const COMISSAO_ESCRITORIO = 0.30;
 const MINIMO = 50.00;
 
 function calcularTeto(salario_liquido, data_admissao) {
@@ -53,10 +54,12 @@ router.post('/', (req, res) => {
         erro: `Valor acima do disponível. Seu saldo atual é R$ ${saldo.toFixed(2)}`
       });
 
+    const taxa = parseFloat((valorNum * TAXA_PERCENTUAL).toFixed(2));
+
     const result = db.prepare(`
       INSERT INTO antecipacao (funcionario_id, ciclo_folha_id, valor, taxa, status, data_solicitacao)
       VALUES (?, ?, ?, ?, 'aprovada', datetime('now'))
-    `).run(funcionario_id, cicloAtivo.id, valorNum, TAXA);
+    `).run(funcionario_id, cicloAtivo.id, valorNum, taxa);
 
     const antecipacao = db.prepare('SELECT * FROM antecipacao WHERE id = ?').get(result.lastInsertRowid);
     res.status(201).json(antecipacao);
