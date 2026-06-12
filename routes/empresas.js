@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
+const COMISSAO_ESCRITORIO = 0.35;
+
 router.get('/', (req, res) => {
   try {
     const { escritorio_id } = req.query;
@@ -21,14 +23,18 @@ router.get('/', (req, res) => {
         WHERE empresa_id = ? AND status = 'ativo'
       `).get(emp.id).count;
 
-      const total_antecipado_mes = cicloAtivo
+      const antecipacoes_ciclo = cicloAtivo
         ? db.prepare(`
-            SELECT COALESCE(SUM(valor), 0) as total FROM antecipacao
+            SELECT COALESCE(SUM(valor), 0) as valor_total, COALESCE(SUM(taxa), 0) as taxa_total
+            FROM antecipacao
             WHERE ciclo_folha_id = ? AND status = 'aprovada'
-          `).get(cicloAtivo.id).total
-        : 0;
+          `).get(cicloAtivo.id)
+        : { valor_total: 0, taxa_total: 0 };
 
-      return { ...emp, total_funcionarios, total_antecipado_mes };
+      const total_antecipado_mes = antecipacoes_ciclo.valor_total;
+      const comissao_estimada = parseFloat((antecipacoes_ciclo.taxa_total * COMISSAO_ESCRITORIO).toFixed(2));
+
+      return { ...emp, total_funcionarios, total_antecipado_mes, comissao_estimada };
     });
 
     res.json(result);
@@ -75,14 +81,18 @@ router.get('/:id', (req, res) => {
       WHERE empresa_id = ? AND status = 'ativo'
     `).get(empresa.id).count;
 
-    const total_antecipado_mes = cicloAtivo
+    const antecipacoes_ciclo = cicloAtivo
       ? db.prepare(`
-          SELECT COALESCE(SUM(valor), 0) as total FROM antecipacao
+          SELECT COALESCE(SUM(valor), 0) as valor_total, COALESCE(SUM(taxa), 0) as taxa_total
+          FROM antecipacao
           WHERE ciclo_folha_id = ? AND status = 'aprovada'
-        `).get(cicloAtivo.id).total
-      : 0;
+        `).get(cicloAtivo.id)
+      : { valor_total: 0, taxa_total: 0 };
 
-    res.json({ ...empresa, total_funcionarios, total_antecipado_mes });
+    const total_antecipado_mes = antecipacoes_ciclo.valor_total;
+    const comissao_estimada = parseFloat((antecipacoes_ciclo.taxa_total * COMISSAO_ESCRITORIO).toFixed(2));
+
+    res.json({ ...empresa, total_funcionarios, total_antecipado_mes, comissao_estimada });
   } catch (err) {
     res.status(500).json({ erro: err.message });
   }

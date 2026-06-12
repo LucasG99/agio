@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
+const COMISSAO_ESCRITORIO = 0.35;
+
 function calcularTeto(salario_liquido, data_admissao) {
   const admissao = new Date(data_admissao);
   const hoje = new Date();
@@ -95,11 +97,21 @@ router.get('/:id', (req, res) => {
       ORDER BY a.data_solicitacao DESC
     `).all(f.id);
 
+    const taxa_total = cicloAtivo
+      ? db.prepare(`
+          SELECT COALESCE(SUM(taxa), 0) as total FROM antecipacao
+          WHERE funcionario_id = ? AND ciclo_folha_id = ? AND status = 'aprovada'
+        `).get(f.id, cicloAtivo.id).total
+      : 0;
+
+    const comissao_estimada = parseFloat((taxa_total * COMISSAO_ESCRITORIO).toFixed(2));
+
     res.json({
       ...f,
       teto: Math.round(teto * 100) / 100,
       saldo_disponivel: Math.round(saldo_disponivel * 100) / 100,
       total_antecipado_ciclo_atual: Math.round(total_antecipado_ciclo_atual * 100) / 100,
+      comissao_estimada,
       antecipacoes
     });
   } catch (err) {

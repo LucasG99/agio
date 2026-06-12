@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
+const COMISSAO_ESCRITORIO = 0.35;
+
 router.get('/', (req, res) => {
   try {
     const { empresa_id, ciclo_id } = req.query;
@@ -26,11 +28,19 @@ router.get('/', (req, res) => {
     if (antecipacoes.length === 0)
       return res.status(404).json({ erro: 'Nenhuma antecipação aprovada neste ciclo' });
 
+    const total_taxas = antecipacoes.reduce((acc, a) => acc + a.taxa, 0);
+    const comissao_escritorio = parseFloat((total_taxas * COMISSAO_ESCRITORIO).toFixed(2));
+    const receita_agio = parseFloat((total_taxas - comissao_escritorio).toFixed(2));
+
     const linhas = [
-      'nome,cpf,valor,taxa,total_a_descontar,data_solicitacao',
-      ...antecipacoes.map(a =>
-        `"${a.nome}","${a.cpf}",${a.valor.toFixed(2)},${a.taxa.toFixed(2)},${a.total_a_descontar.toFixed(2)},"${a.data_solicitacao}"`
-      )
+      'nome,cpf,valor,taxa,comissao_escritorio,receita_agio,total_a_descontar,data_solicitacao',
+      ...antecipacoes.map(a => {
+        const comissao = parseFloat((a.taxa * COMISSAO_ESCRITORIO).toFixed(2));
+        const receita = parseFloat((a.taxa - comissao).toFixed(2));
+        return `"${a.nome}","${a.cpf}",${a.valor.toFixed(2)},${a.taxa.toFixed(2)},${comissao.toFixed(2)},${receita.toFixed(2)},${a.total_a_descontar.toFixed(2)},"${a.data_solicitacao}"`;
+      }),
+      `,,,,,,`,
+      `TOTAIS,,${antecipacoes.reduce((acc,a) => acc+a.valor,0).toFixed(2)},${total_taxas.toFixed(2)},${comissao_escritorio.toFixed(2)},${receita_agio.toFixed(2)},${antecipacoes.reduce((acc,a) => acc+a.total_a_descontar,0).toFixed(2)},`
     ];
 
     const csv = linhas.join('\n');

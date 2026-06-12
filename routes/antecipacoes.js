@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
-const TAXA_PERCENTUAL = 0.099;
-const COMISSAO_ESCRITORIO = 0.30;
+const TAXA_PERCENTUAL = 0.0999;
+const COMISSAO_ESCRITORIO = 0.35;
 const MINIMO = 50.00;
 
 function calcularTeto(salario_liquido, data_admissao) {
@@ -55,6 +55,8 @@ router.post('/', (req, res) => {
       });
 
     const taxa = parseFloat((valorNum * TAXA_PERCENTUAL).toFixed(2));
+    const comissao_escritorio = parseFloat((taxa * COMISSAO_ESCRITORIO).toFixed(2));
+    const receita_agio = parseFloat((taxa - comissao_escritorio).toFixed(2));
 
     const result = db.prepare(`
       INSERT INTO antecipacao (funcionario_id, ciclo_folha_id, valor, taxa, status, data_solicitacao)
@@ -62,7 +64,7 @@ router.post('/', (req, res) => {
     `).run(funcionario_id, cicloAtivo.id, valorNum, taxa);
 
     const antecipacao = db.prepare('SELECT * FROM antecipacao WHERE id = ?').get(result.lastInsertRowid);
-    res.status(201).json(antecipacao);
+    res.status(201).json({ ...antecipacao, comissao_escritorio, receita_agio });
   } catch (err) {
     res.status(500).json({ erro: err.message });
   }
