@@ -1,216 +1,598 @@
 # Technical Documentation — Ágio
 
-## Overview
+**Author:** Lucas Galvão  
+**Institution:** Inteli — Instituto de Tecnologia e Liderança  
+**Program:** Information Systems, Entrepreneurship Track  
+**Document version:** 2.0 — aligned with the implemented codebase (June 2026)
 
-Ágio is a full-stack web application that simulates a salary advance product for accounting firms and their employees. The application has three main interfaces: an administrative dashboard for the accounting office, a mobile page where employees can request salary advances, and a login screen. The backend is a Node.js API built with Express serving data from a SQLite database, while the frontend uses plain HTML/CSS/JS without frameworks. The application is deployed to production on Render and can also run locally on Windows or Unix environments.
+---
 
-## Stack
+## 1. Introduction
 
-| Layer       | Technology                                     | Version |
-| ----------- | ---------------------------------------------- | ------- |
-| Runtime     | Node.js                                        | 20.11.1 |
-| Web server  | Express                                        | 4.x     |
-| Database    | SQLite via `better-sqlite3`                    | 9.x     |
-| Frontend    | HTML5 + CSS3 + Vanilla JS                      | —       |
-| Fonts (CDN) | Bricolage Grotesque + DM Sans (Google Fonts)   | —       |
-| CSV parser  | Custom implementation with delimiter detection | —       |
-| Hosting     | Render (free tier)                             | —       |
+Ágio is a B2B2C earned wage access (EWA) fintech prototype developed as the technical component of an undergraduate capstone project. The product enables formally employed CLT workers to request salary advances against their accrued earnings, with automatic deduction from the next payroll cycle. Distribution occurs through accounting firms that already manage payroll for small and medium enterprises (SMEs) with 10 to 100 employees.
 
-The decision to use SQLite with `better-sqlite3` (instead of PostgreSQL or MongoDB) is deliberate for the MVP phase: single-file database, zero configuration, and synchronous performance sufficient for the projected operational volume during the first 12 months. Migration to PostgreSQL is planned for the expansion phase (Sprint 4 or later), once transaction volume justifies the additional infrastructure.
+The technical solution is a **full-stack web monolith**: a single Node.js process serves a REST API, static frontend pages, and an embedded SQLite database. The implementation covers the complete operational cycle — payroll ingestion, limit calculation, advance request, and deduction reporting — using **fictional data only**. No real financial transactions, payment rails, or personal data are processed.
 
-## File structure
+> **Scope note:** The implementation was deliberately kept lean, in agreement with the academic advisor, to prioritize end-to-end demonstrability within the available project timeline. The sections below describe what was built and how it works; production-grade concerns (authentication, payment integration, LGPD compliance) are acknowledged where relevant but not implemented.
 
-```text
+---
+
+## 2. System Context and Actors
+
+The application serves three distinct user roles through separate interfaces:
+
+| Actor | Interface | Primary actions |
+|---|---|---|
+| **Accounting office (contador)** | `index.html` → `painel.html` | Log in, manage client companies, upload payroll CSV, monitor employees and advances, download deduction reports |
+| **Employer (empresa)** | Indirect — via CSV upload | Provides payroll data; does not interact with the system directly |
+| **Employee (funcionário CLT)** | `funcionario.html` | Access via company-specific link, authenticate with CPF, view available balance, request advances, review history |
+
+The employer is modeled implicitly: company records belong to an accounting office, and employee data enters the system exclusively through payroll CSV uploads performed by the accountant.
+
+---
+
+## 3. Architecture Overview
+
+### 3.1 Architectural pattern
+
+Ágio follows a **monolithic three-tier architecture** within a single deployable unit:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Presentation Layer                        │
+│   index.html  │  painel.html  │  funcionario.html  │  CSS   │
+│              (Vanilla HTML/CSS/JavaScript)                   │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ HTTP (JSON / static files)
+┌──────────────────────────▼──────────────────────────────────┐
+│                    Application Layer                         │
+│              Express.js REST API (/api/*)                      │
+│   auth │ empresas │ funcionarios │ ciclos │ antecipacoes    │
+│              relatorio │ acesso                              │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ better-sqlite3 (synchronous SQL)
+┌──────────────────────────▼──────────────────────────────────┐
+│                      Data Layer                              │
+│                   SQLite (agio.db)                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+There is no service layer, repository abstraction, or ORM. Business logic resides directly in route handlers, with shared calculations (e.g., advance ceiling) duplicated across three modules. This design minimizes indirection and accelerates development for a demonstration MVP.
+
+### 3.2 Request lifecycle
+
+1. The browser loads static HTML/CSS/JS from `public/` via `express.static`.
+2. Client-side JavaScript calls REST endpoints under `/api/*`, passing identifiers (`escritorio_id`, `empresa_id`, `funcionario_id`) as query parameters or request body fields.
+3. Route handlers execute parameterized SQL queries against SQLite and return JSON responses (or CSV for reports).
+4. The frontend updates the DOM based on API responses; there is no client-side routing framework.
+
+### 3.3 Bootstrapping
+
+On startup, `server.js` loads the database module, checks whether the `escritorio` table is empty, and automatically runs `seed.js` if no data exists. This ensures that freshly deployed instances (including cloud environments with ephemeral filesystems) contain demo data without manual intervention.
+
+```javascript
+const count = db.prepare('SELECT COUNT(*) as n FROM escritorio').get();
+if (count.n === 0) {
+  require('./seed');
+}
+```
+
+---
+
+## 4. Technology Stack
+
+| Layer | Technology | Version | Rationale |
+|---|---|---|---|
+| Runtime | Node.js | 20.x | LTS stability; required for `better-sqlite3` native bindings |
+| Web framework | Express | 4.18.x | Minimal HTTP server with middleware ecosystem |
+| Database | SQLite via `better-sqlite3` | 9.4.x | Zero-configuration, single-file storage, synchronous API suitable for low-volume demo workloads |
+| File upload | Multer | 1.4.x | Multipart form handling for CSV uploads |
+| CSV parsing | `csv-parse/sync` | 5.5.x | Synchronous parsing with column mapping |
+| CORS | `cors` | 2.8.x | Permissive cross-origin access (development/demo) |
+| Frontend | HTML5, CSS3, Vanilla JavaScript | — | No build step, no framework overhead |
+| Typography | Google Fonts (CDN) | — | Bricolage Grotesque (headings), DM Sans (body) |
+| Hosting (documented) | Render free tier | — | Public demo deployment |
+
+**Explicitly absent:** frontend frameworks (React, Vue), ORM (Sequelize, Prisma), automated tests, containerization (Docker), CI/CD pipelines, message queues, and external payment/BaaS integrations.
+
+---
+
+## 5. Project Structure
+
+```
 agio/
-├── server.js                 # Entry point, configures Express and routes
-├── db.js                     # SQLite connection + schema + automatic seed
-├── package.json              # Dependencies and npm scripts
-├── .node-version             # Node version pin for Render
-├── .gitignore                # Ignores agio.db, node_modules, uploads, .env
+├── server.js              # Application entry point
+├── db.js                  # Database connection, schema DDL, pragmas
+├── seed.js                # Fictional demo data
+├── package.json           # Dependencies and npm scripts
+├── agio.db                # SQLite database (runtime, gitignored)
+├── uploads/               # Temporary CSV storage (gitignored)
 │
 ├── routes/
-│   ├── auth.js               # Accounting office login
-│   ├── empresas.js           # Company CRUD
-│   ├── funcionarios.js       # Employee CRUD, CPF lookup
-│   ├── antecipacoes.js       # Salary advance requests
-│   ├── ciclos.js             # Monthly payroll CSV upload
-│   └── relatorio.js          # Discount report CSV generation
+│   ├── auth.js            # Accounting office login
+│   ├── empresas.js        # Company listing and registration
+│   ├── funcionarios.js    # Employee listing and detail
+│   ├── ciclos.js          # Payroll cycle management and CSV upload
+│   ├── antecipacoes.js    # Advance creation and history
+│   ├── relatorio.js       # Deduction report CSV export
+│   └── acesso.js          # Employee authentication by CPF
 │
-├── public/
-│   ├── index.html            # Login screen
-│   ├── painel.html           # Office dashboard (desktop)
-│   ├── funcionario.html      # Employee page (mobile)
-│   └── style.css             # Complete design system
-│
-├── uploads/                  # Temporary CSV directory (ignored by git)
-└── agio.db                   # SQLite database (created at runtime, ignored by git)
+└── public/
+    ├── index.html         # Login screen
+    ├── painel.html        # Accounting office dashboard
+    ├── funcionario.html   # Employee mobile page
+    └── css/
+        └── style.css      # Design system (CSS custom properties)
 ```
 
-## Database
+---
 
-The schema contains five entities linked in a top-down ownership hierarchy starting from the accounting office.
+## 6. Data Model
 
-**escritorio** — root entity of the system. Every login belongs to an accounting office.
+### 6.1 Entity-relationship diagram
 
-* `id` (PK), `nome`, `email`, `senha_hash`, `telefone`, `data_criacao`
-
-**empresa** — companies whose payroll is managed by the office.
-
-* `id` (PK), `escritorio_id` (FK), `razao_social`, `nome_fantasia`, `cnpj`, `data_criacao`
-
-**funcionario** — company employees identified by CPF.
-
-* `id` (PK), `empresa_id` (FK), `nome`, `cpf` (unique per company), `salario`, `data_admissao`, `ativo`
-
-**ciclo** — every monthly payroll upload creates a cycle. Represents the payroll competency month of the advance.
-
-* `id` (PK), `empresa_id` (FK), `mes`, `ano`, `data_upload`, `total_funcionarios`
-
-**antecipacao** — individual salary advance request.
-
-* `id` (PK), `funcionario_id` (FK), `ciclo_id` (FK), `valor`, `taxa`, `status`, `data_solicitacao`, `data_desconto`
-
-The advance status has only three values: `aprovada` (created immediately upon request, with no manual approval flow), `descontada` (marked when the payroll deduction report is generated), and `cancelada` (if the office needs to reverse it). There is no `pendente` state in the current schema, a decision made to simplify the demo flow.
-
-The `db.js` file handles both schema creation (`CREATE TABLE IF NOT EXISTS`) and the automatic seed process executed whenever the database is empty. The seed creates 1 test office, 3 companies, and 18 employees distributed among them. This allows any freshly deployed instance to already contain demo data immediately after the first startup.
-
-## Backend routes
-
-The API follows a simple REST pattern without URL versioning, returning JSON responses.
-
-| Method | Route                                | Description                                           |
-| ------ | ------------------------------------ | ----------------------------------------------------- |
-| POST   | `/api/login`                         | Office authentication, returns `escritorio_id`        |
-| GET    | `/api/empresas`                      | Lists companies belonging to the authenticated office |
-| POST   | `/api/empresas`                      | Creates a new company                                 |
-| GET    | `/api/empresas/:id/funcionarios`     | Lists company employees                               |
-| POST   | `/api/empresas/:id/ciclos`           | Uploads payroll CSV for the month                     |
-| GET    | `/api/funcionarios/:empresa_id/:cpf` | Finds employee by CPF (used on mobile page)           |
-| POST   | `/api/antecipacoes`                  | Creates salary advance request                        |
-| GET    | `/api/funcionarios/:id/antecipacoes` | Employee advance history                              |
-| GET    | `/api/empresas/:id/relatorio`        | Generates payroll deduction CSV                       |
-
-Authentication is simplified for demonstration purposes: the `escritorio_id` is stored in the browser’s `sessionStorage` after login and sent in subsequent requests. There is no JWT, secure cookie, or refresh token. For production use, this layer must be replaced with proper authentication (JWT + httpOnly cookies, or a BaaS solution such as Auth0/Clerk).
-
-## Frontend
-
-The application has three pages, each with a clearly defined responsibility.
-
-**index.html — Login.** Initial screen with a dark radial gradient and accounting office email/password form. The seeded credentials are `contato@escritorio.com.br` / `senha123`. After successful authentication, the user is redirected to `painel.html`.
-
-**painel.html — Office dashboard (desktop).** Fixed left sidebar with inline SVG icons in a Lucide-style aesthetic. The main area displays company cards with colored avatars (deterministic color generated through a name hash, without external libraries). Clicking a company opens a detail view containing employee tables, payroll cycle status, CSV upload, and advance tables. Upload modal uses backdrop blur. Stat cards at the top display totals (active employees, monthly advances, total transaction volume, accumulated commission).
-
-The upload CSV accepts two delimiters: comma (international standard) or semicolon (Brazilian Excel standard). Detection is automatic and based on the first line of the file:
-
-```js
-const delimiter = conteudo.split('\n')[0].includes(';') ? ';' : ',';
+```
+escritorio (1) ──< empresa (N) ──< funcionario (N)
+                      │                    │
+                      │                    │
+                      └──< ciclo_folha (N) ┘
+                                │
+                                └──< antecipacao (N)
 ```
 
-This simple logic avoids the friction of asking accounting offices to change Excel regional settings before exporting.
+### 6.2 Table definitions
 
-**funcionario.html — Employee page (mobile-first).** Vertical mobile-optimized layout with a hero gradient and curved white overlay at the bottom. Displays available balance (up to 40% of salary minus advances in the current cycle), a visual progress bar for the balance/limit ratio, and transaction history grouped by payroll cycle. Access happens through URL parameters: `?empresa_id=1&cpf=999.888.777-66`, avoiding the need for employee registration/login. The salary advance flow happens in three clicks: enter amount, confirm, receive Pix.
+#### `escritorio` — Accounting office (root tenant)
 
-The design uses two token systems via CSS variables: `brand-*` color scale (green) and `neutral-*` (gray), with five shadow levels (`shadow-xs` to `shadow-xl`), five border radius levels, and two typography families (Bricolage for headings, DM Sans for body text).
+| Column | Type | Description |
+|---|---|---|
+| `id` | INTEGER PK | Auto-increment identifier |
+| `nome` | TEXT | Office name |
+| `cnpj` | TEXT | Brazilian corporate tax ID |
+| `email` | TEXT | Contact email |
+| `created_at` | TEXT | ISO timestamp (default: `datetime('now')`) |
 
-## Running locally
+#### `empresa` — Client company
 
-Prerequisites:
+| Column | Type | Description |
+|---|---|---|
+| `id` | INTEGER PK | Auto-increment identifier |
+| `escritorio_id` | INTEGER FK → `escritorio.id` | Owning accounting office |
+| `nome` | TEXT | Company name |
+| `cnpj` | TEXT | Company tax ID (unique per office) |
+| `created_at` | TEXT | Creation timestamp |
 
-* Node.js 20.11.1 or higher (versions 22+ may have compatibility issues with `better-sqlite3` v9; Node 20 is recommended)
-* npm 9 or higher
-* Git
+#### `funcionario` — Employee
 
-Step-by-step in PowerShell (Windows) or Unix terminal:
+| Column | Type | Description |
+|---|---|---|
+| `id` | INTEGER PK | Auto-increment identifier |
+| `empresa_id` | INTEGER FK → `empresa.id` | Employer |
+| `nome` | TEXT | Full name |
+| `cpf` | TEXT | Brazilian individual tax ID (unique per company) |
+| `salario_liquido` | REAL | Net monthly salary |
+| `data_admissao` | TEXT | Hire date (`YYYY-MM-DD`) |
+| `status` | TEXT | `ativo` (default) or inactive |
+| `created_at` | TEXT | Creation timestamp |
+
+#### `ciclo_folha` — Payroll cycle
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | INTEGER PK | Auto-increment identifier |
+| `empresa_id` | INTEGER FK → `empresa.id` | Company |
+| `competencia` | TEXT | Cycle identifier (e.g., `2026-05`) |
+| `arquivo_nome` | TEXT | Original uploaded filename |
+| `status` | TEXT | `processada` (active) or `inativa` |
+| `created_at` | TEXT | Upload timestamp |
+
+The **active cycle** for a company is the most recent record with `status = 'processada'`. Uploading a new CSV for the same competency deactivates the previous cycle.
+
+#### `antecipacao` — Salary advance
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | INTEGER PK | Auto-increment identifier |
+| `funcionario_id` | INTEGER FK → `funcionario.id` | Requesting employee |
+| `ciclo_folha_id` | INTEGER FK → `ciclo_folha.id` | Associated payroll cycle |
+| `valor` | REAL | Advanced amount (BRL) |
+| `taxa` | REAL | Service fee charged |
+| `status` | TEXT | `aprovada`, `descontada`, or `cancelada` |
+| `data_solicitacao` | TEXT | Request timestamp |
+| `data_pagamento` | TEXT | Payment timestamp (nullable) |
+
+**Status semantics:** The demo flow creates advances with status `aprovada` immediately upon request — there is no pending/approval queue. The `descontada` status exists in the schema and seed data but is not set programmatically when a report is generated. The `cancelada` status has no corresponding endpoint.
+
+### 6.3 Database configuration
+
+SQLite is configured with two pragmas in `db.js`:
+
+- `journal_mode = WAL` — Write-Ahead Logging for improved concurrent read performance.
+- `foreign_keys = ON` — Enforces referential integrity at the database level.
+
+All queries use **prepared statements** via `better-sqlite3`, mitigating SQL injection regardless of the absence of an ORM.
+
+---
+
+## 7. Core Business Rules
+
+### 7.1 Advance ceiling (teto)
+
+The maximum advanceable amount per employee per cycle depends on tenure:
+
+```
+IF days_since_hire > 90:
+    ceiling = net_salary × 0.40
+ELSE:
+    ceiling = net_salary × 0.20
+```
+
+This rule is implemented identically in `funcionarios.js`, `acesso.js`, and `antecipacoes.js`.
+
+### 7.2 Available balance (saldo disponível)
+
+```
+available_balance = ceiling − SUM(approved advances in active cycle)
+```
+
+If no active cycle exists for the company, the ceiling itself is returned as the available balance (advances cannot be created without an active cycle).
+
+### 7.3 Service fee (taxa)
+
+When an advance is created via `POST /api/antecipacoes`:
+
+```
+fee = advance_amount × 0.0999   (9.99%)
+```
+
+Minimum advance amount: **R$ 50.00**.
+
+### 7.4 Commission split
+
+The accounting office receives **35%** of the collected fee; Ágio retains the remainder:
+
+```
+office_commission = fee × 0.35
+agio_revenue      = fee − office_commission
+```
+
+These constants (`TAXA_PERCENTUAL = 0.0999`, `COMISSAO_ESCRITORIO = 0.35`) are defined in `routes/antecipacoes.js` and reused in reporting routes.
+
+### 7.5 Payroll deduction total
+
+Each advance generates a payroll deduction of:
+
+```
+total_to_deduct = advance_amount + fee
+```
+
+---
+
+## 8. REST API Reference
+
+All endpoints return JSON unless otherwise noted. Error responses follow the format `{ "erro": "message" }`.
+
+### 8.1 Authentication
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/auth/login` | Returns the first accounting office in the database. **Credentials are not validated.** |
+
+**Request body:** `{ "email": "...", "password": "..." }` (ignored)  
+**Response:** `{ "id": 1, "nome": "...", "email": "..." }`
+
+The client stores `id` and `nome` in `localStorage` and passes `escritorio_id` as a query parameter in subsequent requests.
+
+### 8.2 Companies
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/empresas?escritorio_id=` | List companies with aggregated KPIs |
+| `POST` | `/api/empresas` | Register a new company |
+| `GET` | `/api/empresas/:id` | Company detail with KPIs |
+
+**KPI fields appended to each company:** `total_funcionarios`, `total_antecipado_mes`, `comissao_estimada`.
+
+**Create request body:** `{ "escritorio_id": 1, "nome": "...", "cnpj": "..." }`
+
+Duplicate CNPJ within the same office returns HTTP 409.
+
+### 8.3 Employees
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/funcionarios?empresa_id=` | List active employees with ceiling, balance, and advance status |
+| `GET` | `/api/funcionarios/:id` | Employee detail, advance history, and commission estimate |
+
+**Computed fields:** `teto`, `saldo_disponivel`, `total_antecipado_ciclo_atual`, `status_antecipacao` (`sem_antecipacao`, `com_antecipacao`, or `limite_esgotado`).
+
+### 8.4 Payroll cycles
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/ciclos?empresa_id=` | List cycles with advance counts |
+| `POST` | `/api/ciclos/upload` | Upload and process payroll CSV (multipart) |
+
+**Upload form fields:**
+
+| Field | Type | Required |
+|---|---|---|
+| `empresa_id` | text | Yes |
+| `competencia` | text | Yes (e.g., `2026-05`) |
+| `arquivo` | file (.csv) | Yes |
+
+**Required CSV columns:** `cpf`, `nome`, `salario_liquido`, `data_admissao`
+
+**Processing behavior:**
+
+1. Delimiter auto-detected from the header row (`;` or `,`).
+2. Dates normalized from `DD/MM/YYYY` or `YYYY-MM-DD`.
+3. Rows missing CPF or salary are skipped.
+4. Existing employees (matched by CPF + company) are updated; new ones are inserted.
+5. All operations run inside a SQLite transaction.
+6. Uploaded file is deleted after processing.
+7. Previous cycle for the same competency is marked `inativa`.
+
+**Response:** `{ "ciclo_id", "competencia", "total_importados", "novos", "atualizados", "ignorados" }`
+
+### 8.5 Advances
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/antecipacoes` | Create an advance request |
+| `GET` | `/api/antecipacoes?funcionario_id=` | List advance history |
+
+**Create request body:** `{ "funcionario_id": 1, "valor": 300.00 }`
+
+**Validations performed server-side:**
+
+- Employee exists and is active.
+- An active payroll cycle exists for the company.
+- Amount ≥ R$ 50.00.
+- Amount ≤ available balance.
+
+**Response includes:** `comissao_escritorio`, `receita_agio` (computed, not persisted).
+
+### 8.6 Employee access
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/acesso` | Authenticate employee by CPF |
+| `GET` | `/api/acesso/:funcionario_id` | Employee data, balance, and full history |
+
+**Authenticate request body:** `{ "cpf": "111.222.333-44", "empresa_id": 1 }`
+
+Returns 404 if CPF is not found for the given company; 403 if employee is inactive.
+
+### 8.7 Deduction report
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/relatorio?empresa_id=&ciclo_id=` | Download CSV deduction report |
+
+Returns a CSV file with columns: `nome`, `cpf`, `valor`, `taxa`, `comissao_escritorio`, `receita_agio`, `total_a_descontar`, `data_solicitacao`, plus a totals row.
+
+### 8.8 Health check
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/health` | Returns `{ "ok": true }` |
+
+---
+
+## 9. Operational Workflow
+
+The following sequence describes a complete monthly cycle as implemented:
+
+```mermaid
+sequenceDiagram
+    participant A as Accountant
+    participant P as painel.html
+    participant API as Express API
+    participant DB as SQLite
+    participant E as Employee
+    participant F as funcionario.html
+
+    A->>P: Log in (any credentials)
+    P->>API: POST /api/auth/login
+    API->>DB: SELECT first escritorio
+    API-->>P: escritorio_id
+
+    A->>P: Upload payroll CSV
+    P->>API: POST /api/ciclos/upload
+    API->>DB: INSERT ciclo_folha, UPSERT funcionario
+    API-->>P: Import summary
+
+    E->>F: Open link (?empresa_id=X)
+    E->>F: Enter CPF
+    F->>API: POST /api/acesso
+    API->>DB: Lookup CPF, compute balance
+    API-->>F: Employee data + saldo_disponivel
+
+    E->>F: Request advance amount
+    F->>API: POST /api/antecipacoes
+    API->>DB: Validate balance, INSERT antecipacao
+    API-->>F: Confirmation (Pix simulated)
+
+    A->>P: Download deduction report
+    P->>API: GET /api/relatorio
+    API->>DB: Query approved advances for cycle
+    API-->>P: CSV file download
+```
+
+---
+
+## 10. Frontend Architecture
+
+### 10.1 Design approach
+
+The frontend consists of three standalone HTML pages with inline JavaScript. There is no bundler, module system, or component library. Styling is centralized in `public/css/style.css`, which defines a token-based design system using CSS custom properties for colors (`--brand-*`, `--neutral-*`), shadows, border radii, and typography.
+
+### 10.2 Page responsibilities
+
+**`index.html` — Login**
+
+Dark-themed entry point with email/password form. On submit, calls `/api/auth/login`, stores office data in `localStorage`, and redirects to `painel.html`. Route protection on subsequent pages checks for the presence of `escritorio_id` in `localStorage`.
+
+**`painel.html` — Accounting dashboard**
+
+Desktop-oriented interface with a fixed sidebar and dynamic content area. Implements a shallow navigation model:
+
+1. **Companies view** — Cards with KPIs (employees, monthly advances, commission).
+2. **Company detail** — Employee table with ceiling/balance/status, payroll upload modal, cycle list, report download.
+3. **Employee detail** — Individual advance history and financial summary.
+
+Client-side logic (~415 lines) handles API calls, DOM rendering, CSV upload via `FormData`, and modal interactions.
+
+**`funcionario.html` — Employee page**
+
+Mobile-first layout optimized for smartphone access. Entry via URL parameter `?empresa_id=X`. Flow:
+
+1. CPF input with client-side masking.
+2. Balance dashboard with visual progress bar (used/limit ratio).
+3. Three-step advance flow: enter amount → confirm (shows fee breakdown) → success message.
+4. History grouped by payroll competency.
+
+Pix disbursement is **simulated** — the success screen displays a confirmation message without any payment API call.
+
+### 10.3 Client-side state
+
+| Key | Storage | Purpose |
+|---|---|---|
+| `escritorio_id` | `localStorage` | Identifies the logged-in accounting office |
+| `escritorio_nome` | `localStorage` | Display name in dashboard header |
+| `funcionario_id` | In-memory (page scope) | Tracks authenticated employee during session |
+
+No server-side session management exists.
+
+---
+
+## 11. Security and Data Privacy
+
+### 11.1 Current implementation (demo)
+
+| Concern | Status |
+|---|---|
+| Accountant authentication | **Not implemented** — login returns the first office regardless of credentials |
+| API authorization | **Not implemented** — endpoints accept any `escritorio_id` without verification |
+| Employee authentication | CPF lookup only; no password, OTP, or token |
+| CPF storage | Plain text in SQLite |
+| HTTPS | Provided by hosting platform (Render) in production; not configured locally |
+| CORS | Open (`cors()` with no origin restriction) |
+| Rate limiting | Absent |
+| Input validation | Partial — business rules enforced; CPF checksum not validated |
+
+### 11.2 Data handled
+
+Even in demo mode, the schema stores fields that would be classified as personal and financial data under Brazil's LGPD (Lei 13.709/2018): CPF, name, net salary, hire date, and transaction history. The seed script uses entirely fictional identifiers.
+
+### 11.3 Production requirements (documented, not implemented)
+
+A production deployment would require, at minimum: JWT or OAuth-based authentication with httpOnly cookies, CPF hashing, TLS enforcement, migration to a managed relational database (PostgreSQL), LGPD-compliant consent flows, data retention policies, audit logging, and a Data Protection Impact Report (RIPD).
+
+---
+
+## 12. Deployment
+
+### 12.1 Local development
+
+**Prerequisites:** Node.js 20.x, npm 9+
 
 ```bash
-# 1. Clone repository
 git clone https://git.inteli.edu.br/lucas.galvao/agio.git
 cd agio
-
-# 2. Install dependencies (better-sqlite3 compiles native bindings)
 npm install
-
-# 3. Start server
 node server.js
 ```
 
-Expected output:
+The server listens on `process.env.PORT || 3000`. On first run, the database is created and seeded automatically.
 
-```text
-Server running at http://localhost:3000
-Empty database detected, running initial seed...
-Seed complete: 1 office, 3 companies, 18 employees
-```
+**Demo access:**
 
-After the first startup, the `agio.db` file is created at the project root. This file is not versioned in git (it is included in `.gitignore`), so every environment has its own database instance. To reset application state, simply delete the file: on the next execution, the seed runs automatically.
+| Interface | URL |
+|---|---|
+| Login | `http://localhost:3000` |
+| Dashboard | `http://localhost:3000/painel.html` |
+| Employee page | `http://localhost:3000/funcionario.html?empresa_id=1` |
+| Health check | `http://localhost:3000/api/health` |
 
-Access in browser:
+### 12.2 Production (Render)
 
-* Office dashboard: `http://localhost:3000`
-* Employee page (example): `http://localhost:3000/funcionario.html?empresa_id=1&cpf=111.222.333-44`
+The application is deployed to Render's free tier at `https://agio-2.onrender.com`.
 
-Office login credentials:
+| Setting | Value |
+|---|---|
+| Build command | `npm install --build-from-source` |
+| Start command | `node server.js` |
+| Node version | 20.x |
+| Port | Injected via `PORT` environment variable |
 
-* Email: `contato@escritorio.com.br`
-* Password: `senha123`
+The `--build-from-source` flag compiles `better-sqlite3` native bindings on Render's Linux environment, where prebuilt binaries may not match the runtime.
 
-## Render deployment
+Deployment uses a public GitHub mirror (`github.com/LucasG99/agio`) because Render cannot connect directly to Inteli's GitLab instance. Each push to the mirror triggers an automatic redeploy.
 
-The application is live at `https://agio-2.onrender.com`, hosted on Render’s free tier. Required Render configuration:
+**Ephemeral storage caveat:** On Render's free tier, the filesystem is not persistent across redeploys. The SQLite database is recreated and re-seeded on each deployment, which is acceptable for demonstration purposes.
 
-```yaml
-Build Command:   npm install --build-from-source
-Start Command:   node server.js
-Environment:     NODE_VERSION=20.11.1
-                 PORT (auto-injected by Render)
-```
+### 12.3 Encoding configuration
 
-The `--build-from-source` flag in `npm install` is required because `better-sqlite3` distributes precompiled binaries only for specific Node versions, and Render uses Linux images that do not always match available binaries. Forcing source compilation resolves compatibility issues at the cost of roughly 30 extra seconds during the initial build.
+Express static file serving does not set charset by default, which can cause encoding issues with Portuguese characters. The server explicitly sets UTF-8 for HTML and CSS files:
 
-Render injects the `PORT` environment variable at runtime, and `server.js` consumes it with a fallback to 3000 in local environments:
-
-```js
-const PORT = process.env.PORT || 3000;
-```
-
-Render cannot directly access Inteli’s GitLab instance, so deployment uses a public GitHub mirror (`https://github.com/LucasG99/agio.git`). A `github` remote was added to the local repository:
-
-```bash
-git remote add github https://github.com/LucasG99/agio.git
-git push github main
-```
-
-Every push to `github` triggers an automatic redeploy on Render.
-
-## Technical notes worth documenting
-
-Three implementation details deserve documentation because they consumed debugging time and may reappear later.
-
-**UTF-8 encoding in served pages.** By default, `express.static` does not inject charset information into the `Content-Type` header of `.html` and `.css` files, which can cause some browsers to interpret content as Latin-1 and break Portuguese accent characters. The fix was to force charset through `setHeaders`:
-
-```js
-app.use(express.static('public', {
-  setHeaders: (res, path) => {
-    if (path.endsWith('.html') || path.endsWith('.css')) {
-      res.setHeader('Content-Type', `${res.getHeader('Content-Type')}; charset=utf-8`);
+```javascript
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    }
+    if (filePath.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css; charset=utf-8');
     }
   }
 }));
 ```
 
-**Node version pinned to 20.** `better-sqlite3` v9, the version currently used, does not compile on Node 24 due to ABI incompatibility. Attempts to move to Node 22 also produced isolated issues. Version 20.11.1 is stable and supported under LTS until 2026, making it the defensive choice. Pinning happens in three places: the `engines` field in `package.json`, the `.node-version` file at the project root, and the `NODE_VERSION` environment variable in Render.
+---
 
-**Comma vs semicolon CSVs.** Brazilian Excel under pt-BR regional settings exports CSVs using semicolons instead of commas (to avoid conflicts with decimal commas). International Excel uses commas. The application accepts both formats through automatic detection during upload, but the payroll deduction report generated by the backend still uses commas as delimiters, causing Brazilian Excel to open the file in a single column unless the user manually applies “Text to Columns”. This behavior is pending correction in the next sprint: switching separators to semicolons and decimal notation from periods to commas inside `routes/relatorio.js`.
+## 13. Seed Data
 
-## Known limitations of the current implementation
+The `seed.js` script populates the database with a coherent demo scenario:
 
-The current implementation is a functional MVP suitable for demonstrations and early validation, not for real-world production use at commercial scale. The following issues must be addressed before operating with real accounting offices charging salary advance fees:
+| Entity | Count | Details |
+|---|---|---|
+| Accounting office | 1 | Escritório Contábil Omega |
+| Companies | 3 | Padaria Flores, Auto Peças Vitória, Mercadinho Belo |
+| Employees | 18 | Distributed across companies; mix of tenures |
+| Payroll cycles | 5 | April 2026 (inactive) and May 2026 (active) per company |
+| Advances | ~12 | Pre-populated with mixed statuses for dashboard visualization |
 
-* `sessionStorage`-based authentication must be replaced with JWT + httpOnly cookies or a managed authentication solution
-* Passwords are hashed with bcrypt, but password recovery flow has not yet been implemented
-* There is no rate limiting on login or advance request routes
-* There are no structured logs (only `console.log` debugging)
-* There are no automated tests
-* SQLite runs as a single file inside the Render container filesystem, meaning every redeploy resets data (acceptable for demos, unacceptable for production)
-* Pix integration is simulated — there are no real calls to QI Tech or another BaaS provider
-* LGPD compliance is partial: personal data is stored, but there is no deletion-on-request flow or formal consent mechanism during registration
+Example employee CPF for testing: `111.222.333-44` (Ana Silva, Padaria Flores, `empresa_id=1`).
+
+---
+
+## 14. Known Limitations
+
+The following constraints are inherent to the current implementation and are relevant for evaluators:
+
+1. **No real payment integration** — Pix disbursement is simulated; no BaaS provider (e.g., QI Tech) is connected.
+2. **No server-side authorization** — API endpoints are publicly callable with knowledge of entity IDs.
+3. **Duplicated business logic** — Ceiling and balance calculations are copy-pasted across three route files rather than centralized.
+4. **Incomplete status lifecycle** — Advances are never transitioned to `descontada` upon report generation; cancellation has no endpoint.
+5. **CSV upload does not deactivate removed employees** — Employees absent from a new payroll file retain `status = 'ativo'`.
+6. **No automated tests** — Behavior is validated manually during development.
+7. **Report CSV delimiter** — Output uses commas; Brazilian Excel (pt-BR locale) may display columns incorrectly without manual parsing.
+8. **Single-tenant demo** — Seed creates one accounting office; login always returns the first record.
+
+These limitations reflect conscious trade-offs to deliver a functional end-to-end demonstration within the project scope.
+
+---
+
+## 15. Conclusion
+
+Ágio implements a complete earned wage access workflow as a lightweight monolithic web application. The architecture prioritizes clarity and demonstrability: a single Node.js process, five database tables, seven API route modules, and three static frontend pages cover the full cycle from payroll ingestion to deduction reporting.
+
+The technical contribution of this prototype lies not in architectural novelty but in **faithful modeling of the B2B2C operational flow** — particularly the accounting-firm-as-channel distribution model, CSV-based payroll integration (compatible with existing accountant workflows), and frictionless employee access via CPF without app installation.
+
+For production deployment, the codebase provides a validated domain model and user flow that would serve as the foundation for incremental hardening: real authentication, payment rail integration, database migration, and regulatory compliance.
+
+---
+
+*This document reflects the codebase as of June 2026. The source code is the authoritative reference for implementation details.*
