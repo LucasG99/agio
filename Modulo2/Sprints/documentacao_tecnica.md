@@ -1,598 +1,430 @@
-# Technical Documentation — Ágio
+# Ágio — Business Plan
 
-**Author:** Lucas Galvão  
-**Institution:** Inteli — Instituto de Tecnologia e Liderança  
-**Program:** Information Systems, Entrepreneurship Track  
-**Document version:** 2.0 — aligned with the implemented codebase (June 2026)
+**A distribution-first fintech for payroll advances at small and medium Brazilian businesses**
 
----
+Lucas Oliveira de Medeiros Galvão
+São Paulo, 2026
 
-## 1. Introduction
+This Business Plan is the operational complement to the Final Course Project (TCC) submitted to Inteli. The TCC sets the strategic context, the market analysis, the technological solution, and the validation record. This document carries the operational depth that the academic format keeps in summary form: the full Business Model Canvas, the financial model with its five working tabs, the monthly Year 1 projection, the sensitivity analysis, the FIDC structuring, the go-to-market playbook with scripts, the customer acquisition economics, the marketing plan, and the hiring plan for the first two years. Where the TCC presents a conclusion, this document presents the calculation behind it.
 
-Ágio is a B2B2C earned wage access (EWA) fintech prototype developed as the technical component of an undergraduate capstone project. The product enables formally employed CLT workers to request salary advances against their accrued earnings, with automatic deduction from the next payroll cycle. Distribution occurs through accounting firms that already manage payroll for small and medium enterprises (SMEs) with 10 to 100 employees.
-
-The technical solution is a **full-stack web monolith**: a single Node.js process serves a REST API, static frontend pages, and an embedded SQLite database. The implementation covers the complete operational cycle — payroll ingestion, limit calculation, advance request, and deduction reporting — using **fictional data only**. No real financial transactions, payment rails, or personal data are processed.
-
-> **Scope note:** The implementation was deliberately kept lean, in agreement with the academic advisor, to prioritize end-to-end demonstrability within the available project timeline. The sections below describe what was built and how it works; production-grade concerns (authentication, payment integration, LGPD compliance) are acknowledged where relevant but not implemented.
+All figures are consistent with the unit economics fixed in the TCC: a 9.99% fee on the advance amount, a 35% commission to the accounting office, an average ticket of R$ 200, an average of 1.5 transactions per active user per month, and a steady state of approximately 450 active workers per fully ramped accounting office.
 
 ---
 
-## 2. System Context and Actors
+## 1. Executive Summary
 
-The application serves three distinct user roles through separate interfaces:
+Ágio distributes a salary advance product to formally employed (CLT) workers at small and medium Brazilian businesses, reaching them through the accounting offices that already manage those businesses' payroll. The worker takes an advance against salary already earned, repaid through a single automatic deduction in the next payroll cycle. The accounting office presents the product to its client companies and earns a commission. The company authorizes the benefit and processes the deduction, bearing no credit risk and no operational load.
 
-| Actor | Interface | Primary actions |
+The product is mature. Mêntore Bank operates it at scale in Brazil with a 0.2% default rate, and DailyPay and EarnIn operate equivalent products in the United States. What does not exist is a distribution network that reaches SMEs of 10 to 100 employees, a segment too small for Mêntore's bank-switch model and too fragmented for the enterprise sales motions of Xerpa, Creditas, Flash, and Caju. The accounting office is the channel that closes this gap, and the network of offices is the defensible asset of the company.
+
+The pricing produces a contribution margin of R$ 8.63 per transaction, 66% of net revenue. A fully ramped accounting office of approximately 450 active users generates R$ 13,487 in gross transaction revenue per month, of which R$ 4,720 is paid to the office and R$ 8,766 is retained by Ágio, with R$ 5,825 of contribution margin after variable costs. The operation reaches break-even at roughly ten contracted offices (a mix of ramped and ramping, around 1,500 active users in aggregate) near month twelve.
+
+The capital plan is a R$ 103,000 equity requirement (R$ 3,000 founder bootstrap plus a R$ 100,000 angel round targeted for the first six months), separate from the FIDC that funds the advances themselves. The financial case rests on the strategic optionality of the channel asset rather than on the operating cash flows of the anchor product alone: by Year 5, a network of 80 offices serving 36,000 active workers is an acquisition target, a partnership vehicle, or the foundation for the hub expansion into payroll-adjacent and insurance products.
+
+The binding constraint for the next eighteen months is execution speed in channel acquisition before a capitalized competitor recognizes the same window.
+
+---
+
+## 2. The Opportunity in Brief
+
+The detailed market analysis lives in Chapter 2 of the TCC. The condensed version: approximately 20 million CLT workers earn up to three minimum wages and have no access to emergency credit on non-punitive terms. Their alternatives are revolving credit at 451.5% per year, informal lending at 10% to 15% per month, or default at Serasa. The salary they have already earned sits inaccessible until the cycle closes.
+
+Three changes converged between late 2024 and mid-2025 to make Ágio buildable now and not before. Law 15.179/2025 removed the requirement of a bank-by-company agreement to offer payroll-deducted credit and granted consigned deductions legal priority in the payroll stack. Pix reduced money-movement cost from about R$ 5 to between R$ 0.50 and R$ 1.50 per transfer, which is the difference between viable and unviable unit economics at a R$ 200 ticket. Banking-as-a-service providers such as QI Tech brought the minimum capital to originate microadvances down from tens of millions of reais to a few hundred thousand.
+
+The market is sized in the TCC at approximately R$ 2.1 billion of annual gross fee revenue (TAM), R$ 1.6 billion reachable through the accounting channel (SAM), and R$ 12.9 billion in gross revenue at the five-year penetration milestone (SOM) of 80 offices and 36,000 active workers, equivalent to R$ 8.4 million in net revenue to Ágio.
+
+---
+
+## 3. Business Model Canvas
+
+The TCC presents one paragraph per block. This section expands each block to the operational level.
+
+### 3.1 Customer Segments
+
+Three segments interact in a sequential chain. Ágio sells to the accounting office, the office presents to the SME, and the SME makes the product available to the worker. The financial transaction happens between Ágio and the worker; the commercial transaction that enables it happens between Ágio and the office.
+
+**The CLT worker (end user).** Formally employed, earning between one and three minimum wages, concentrated in the 1.5-to-2.5 range, aged 25 to 45, working operational or administrative roles at SMEs of 10 to 100 employees. Digital-bank account holder, Pix as primary payment method, often married with one or two dependents. The worker experiences the cash-flow gap mid-month and has no decent way to bridge it.
+
+**The accounting office (channel partner).** Mid-sized firm serving 50 to 200 client companies, operating at thin margins on low-value compliance services, with limited paths to upsell and an incentive to deepen client retention. The office holds the trust of the SME owner, already processes the payroll, and reaches dozens to hundreds of companies from a single relationship.
+
+**The SME (intermediary channel).** Owner-operated business in retail, logistics, light manufacturing, or services, with a high concentration of base-level labor and annual turnover of 30% to 50%. The SME authorizes the benefit and processes the deduction but bears no credit risk.
+
+### 3.2 Value Propositions
+
+One product, three values, each communicated in a different vocabulary.
+
+To the worker: access to emergency credit without a credit check, a single transparent fee of 9.99% charged once rather than compounding monthly, reached through a link with CPF authentication that needs no app, password, or registration, with the Pix arriving in minutes.
+
+To the accounting office: a recurring revenue stream of approximately R$ 4,720 per month per office at full operation, paid as a 35% commission, with no operational load and no client switching cost, and a new service that strengthens the office's position against competing firms.
+
+To the SME: a turnover-reduction lever offered to employees at no cost, no risk, and no change to the existing payroll process. The framing is turnover reduction, not employee wellness, because turnover reduction is the argument that lands with an owner who already pays the cost of attrition.
+
+### 3.3 Channels
+
+The accounting office is the primary distribution channel for the financial product. The platform is the delivery channel: the office dashboard for the operational interface, the employee page for the worker interaction. Acquisition of offices runs through warm referral chains rather than cold outreach, a conclusion drawn from the field work in Module 2 (a 57% response rate through personal network against 9% through cold prospecting). Hub expansion in later years reuses the same office relationships rather than building new commercial structures.
+
+### 3.4 Customer Relationships
+
+With the accounting office, an active commercial relationship: onboarding support, a dashboard with revenue visibility, monthly commission reporting, and periodic check-ins to sustain distribution effort. With the SME, a one-time onboarding (an authorization document and a single conversation through the accountant) followed by minimal ongoing contact. With the worker, a fully automated self-service product with no human interaction in the normal flow.
+
+### 3.5 Revenue Streams
+
+Year 1 carries a single stream: the 9.99% gross fee on each advance, split 35% to the office and 65% retained by Ágio. Secondary streams enter in Years 2 and 3 as the hub expands into payroll-adjacent services, insurance with low premiums discounted in payroll, simplified pensions, and partner-bank consumer credit. Each addition is a decision made against real demand data from the existing base, not a commitment made in advance.
+
+### 3.6 Key Resources
+
+Three resources sustain the operation. The platform (codebase, deployment, data model, evolving from the MVP stack toward production-grade infrastructure). The capital that funds advances before deductions arrive, bootstrap at first and structured through the FIDC as volume grows. The relationships with accounting offices, which compound over time and form the core defensible asset.
+
+### 3.7 Key Activities
+
+Channel acquisition: identifying, approaching, integrating, and retaining accounting offices. Operational delivery: processing payroll uploads, calculating advance limits, executing transfers, generating deduction reports, monitoring default. Product and infrastructure: maintaining the platform, migrating toward production-grade infrastructure, and incrementally expanding the product surface along the hub roadmap.
+
+### 3.8 Key Partners
+
+QI Tech provides the banking-as-a-service layer (KYC, Pix, FIDC management). Accounting offices act as distribution partners under the commission model. SMEs authorize the benefit and process deductions. FIDC investors hold the senior quotas. ERP vendors used by accounting offices (Thomson Reuters Domínio, Senior, Totvs) are integration partners for the deeper operational ties planned in Year 2.
+
+### 3.9 Cost Structure
+
+Fixed costs cluster around platform infrastructure, founder and early-team compensation, and operational support. Variable costs are the per-transaction Pix and KYC costs, the cost of capital on the funded advances, the default reserve, and the 35% commission to the office. The cost structure evolves across three phases, detailed in Section 5.
+
+---
+
+## 4. Pricing and Unit Economics
+
+### 4.1 Pricing Decision
+
+The price is a single percentage fee of 9.99% on the advance amount. It replaces the hybrid R$ 8-or-3.5% model used in Module 1. A pure percentage is easier to communicate to the worker, scales naturally with the ticket, and removes the operational friction of a two-rule structure.
+
+The 35% commission to the accounting office is the upper bound of the range tested in Module 2 pricing analysis. The lower bound is set by the office's typical 10% to 15% compliance-service margin (below which the commission does not motivate active distribution); the upper bound is set by the point at which Ágio's unit economics stop scaling. The choice of 35% reflects the bargaining position the first offices hold while no comparable product exists in the market. The number is expected to recalibrate downward as the channel matures and the commission commoditizes.
+
+### 4.2 Unit Economics per Transaction
+
+| Item | Value |
+|---|---|
+| Average ticket | R$ 200.00 |
+| Gross fee (9.99%) | R$ 19.98 |
+| Commission to accounting office (35%) | R$ 6.99 |
+| Net revenue to Ágio | R$ 12.99 |
+| Pix + KYC + processing | R$ 1.80 |
+| Cost of capital (CDI proxy) | R$ 2.16 |
+| Default reserve (0.2%) | R$ 0.40 |
+| **Contribution margin per transaction** | **R$ 8.63** |
+| Margin on net revenue | 66% |
+| Margin on gross revenue | 43% |
+
+The R$ 1.80 processing line aggregates the Pix transfer cost (R$ 0.50 to R$ 1.50 by BaaS tier), the KYC verification run at the first advance per worker and amortized across later transactions, and the platform's own overhead. The R$ 2.16 cost of capital is the financing cost of the advanced principal during the days it remains outstanding before the payroll deduction settles, priced at a CDI proxy. The R$ 0.40 default reserve reflects the 0.2% loss rate observed by Mêntore Bank with the same deduction mechanism.
+
+### 4.3 Economics per Active User and per Office
+
+At 1.5 transactions per month, an active user generates R$ 29.97 in gross fee, R$ 19.49 in net revenue, and R$ 12.95 in contribution margin per month.
+
+A fully ramped office of approximately 450 active users generates:
+
+| Metric | Monthly value |
+|---|---|
+| Gross transaction revenue | R$ 13,487 |
+| Commission to office (35%) | R$ 4,720 |
+| Net revenue to Ágio | R$ 8,766 |
+| Contribution margin to Ágio | R$ 5,825 |
+
+The contribution margin per office is the figure that the break-even analysis uses, since it nets out both the office commission and the per-transaction variable costs.
+
+---
+
+## 5. Financial Model
+
+The model is built across five tabs: Assumptions, Year 1 Monthly Projection, Three-to-Five-Year Projection, Financial Analysis, and Scenarios. This section presents each tab and the methodology behind it.
+
+### 5.1 Tab 1 — Assumptions
+
+| Parameter | Value | Source |
 |---|---|---|
-| **Accounting office (contador)** | `index.html` → `painel.html` | Log in, manage client companies, upload payroll CSV, monitor employees and advances, download deduction reports |
-| **Employer (empresa)** | Indirect — via CSV upload | Provides payroll data; does not interact with the system directly |
-| **Employee (funcionário CLT)** | `funcionario.html` | Access via company-specific link, authenticate with CPF, view available balance, request advances, review history |
+| Average ticket | R$ 200 | Calibrated to emergency-credit need of target worker |
+| Fee | 9.99% | Pricing decision (Section 4.1) |
+| Office commission | 35% of gross fee | Upper bound of tested range |
+| Transactions per active user / month | 1.5 | External reference; flagged as a validation gap |
+| Activation rate (workers per company) | 30% | Premise, not yet measured |
+| Steady-state users per ramped office | 450 | Channel calibration |
+| Office activation ramp | 6 to 9 months | Field-work estimate |
+| Default rate | 0.2% | Mêntore Bank benchmark, same mechanism |
+| Cost of capital (advances) | CDI proxy | Priced into unit economics |
+| Senior quota cost (FIDC) | CDI + 2% to 3% | Comparable consigned-credit operations |
+| Discount rate (NPV) | 25% p.a. | Early-stage Brazilian fintech cost of capital |
+| Terminal multiple | 5× Year 3 EBITDA | Conservative vs. Gordon perpetuity |
 
-The employer is modeled implicitly: company records belong to an accounting office, and employee data enters the system exclusively through payroll CSV uploads performed by the accountant.
+Three of these (transaction frequency, activation rate, and ticket size) are calibrated against external references rather than internal measurement. The sensitivity analysis in Section 5.6 shows the model is most exposed to transaction frequency. Closing these gaps with real operational data is the priority of the first twelve months.
 
----
+### 5.2 Tab 2 — Year 1 Monthly Projection
 
-## 3. Architecture Overview
+The Year 1 model is built bottom-up from the office acquisition schedule and the per-office activation ramp, aligned to the milestones in Chapter 8 of the TCC: the first pilot office in month 3, fifty active workers by month 4, five hundred by month 8, ten contracted offices by month 11, and roughly 1,500 active workers by month 12.
 
-### 3.1 Architectural pattern
+**Office acquisition schedule.** One office onboarded roughly every four to six weeks from month 3, all through warm referral, reaching ten contracted offices by month 11.
 
-Ágio follows a **monolithic three-tier architecture** within a single deployable unit:
+**Activation ramp per office.** Each office reaches its steady state of approximately 450 active users over six to nine months, following a concave ramp: a few dozen users in the first month after onboarding, then accelerating before plateauing.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Presentation Layer                        │
-│   index.html  │  painel.html  │  funcionario.html  │  CSS   │
-│              (Vanilla HTML/CSS/JavaScript)                   │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ HTTP (JSON / static files)
-┌──────────────────────────▼──────────────────────────────────┐
-│                    Application Layer                         │
-│              Express.js REST API (/api/*)                      │
-│   auth │ empresas │ funcionarios │ ciclos │ antecipacoes    │
-│              relatorio │ acesso                              │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ better-sqlite3 (synchronous SQL)
-┌──────────────────────────▼──────────────────────────────────┐
-│                      Data Layer                              │
-│                   SQLite (agio.db)                             │
-└─────────────────────────────────────────────────────────────┘
-```
+The aggregate monthly active-user count and the resulting gross revenue:
 
-There is no service layer, repository abstraction, or ORM. Business logic resides directly in route handlers, with shared calculations (e.g., advance ceiling) duplicated across three modules. This design minimizes indirection and accelerates development for a demonstration MVP.
-
-### 3.2 Request lifecycle
-
-1. The browser loads static HTML/CSS/JS from `public/` via `express.static`.
-2. Client-side JavaScript calls REST endpoints under `/api/*`, passing identifiers (`escritorio_id`, `empresa_id`, `funcionario_id`) as query parameters or request body fields.
-3. Route handlers execute parameterized SQL queries against SQLite and return JSON responses (or CSV for reports).
-4. The frontend updates the DOM based on API responses; there is no client-side routing framework.
-
-### 3.3 Bootstrapping
-
-On startup, `server.js` loads the database module, checks whether the `escritorio` table is empty, and automatically runs `seed.js` if no data exists. This ensures that freshly deployed instances (including cloud environments with ephemeral filesystems) contain demo data without manual intervention.
-
-```javascript
-const count = db.prepare('SELECT COUNT(*) as n FROM escritorio').get();
-if (count.n === 0) {
-  require('./seed');
-}
-```
-
----
-
-## 4. Technology Stack
-
-| Layer | Technology | Version | Rationale |
+| Month | Contracted offices | Active users (aggregate) | Gross revenue |
 |---|---|---|---|
-| Runtime | Node.js | 20.x | LTS stability; required for `better-sqlite3` native bindings |
-| Web framework | Express | 4.18.x | Minimal HTTP server with middleware ecosystem |
-| Database | SQLite via `better-sqlite3` | 9.4.x | Zero-configuration, single-file storage, synchronous API suitable for low-volume demo workloads |
-| File upload | Multer | 1.4.x | Multipart form handling for CSV uploads |
-| CSV parsing | `csv-parse/sync` | 5.5.x | Synchronous parsing with column mapping |
-| CORS | `cors` | 2.8.x | Permissive cross-origin access (development/demo) |
-| Frontend | HTML5, CSS3, Vanilla JavaScript | — | No build step, no framework overhead |
-| Typography | Google Fonts (CDN) | — | Bricolage Grotesque (headings), DM Sans (body) |
-| Hosting (documented) | Render free tier | — | Public demo deployment |
+| 1 | 0 | 0 | R$ 0 |
+| 2 | 0 | 0 | R$ 0 |
+| 3 | 1 | 30 | R$ 899 |
+| 4 | 1 | 55 | R$ 1,648 |
+| 5 | 2 | 130 | R$ 3,896 |
+| 6 | 3 | 250 | R$ 7,493 |
+| 7 | 4 | 400 | R$ 11,988 |
+| 8 | 5 | 560 | R$ 16,783 |
+| 9 | 7 | 760 | R$ 22,777 |
+| 10 | 8 | 1,000 | R$ 29,970 |
+| 11 | 10 | 1,280 | R$ 38,362 |
+| 12 | 10 | 1,500 | R$ 44,955 |
+| **Year 1 total** | | **~500 avg** | **~R$ 179,000** |
 
-**Explicitly absent:** frontend frameworks (React, Vue), ORM (Sequelize, Prisma), automated tests, containerization (Docker), CI/CD pipelines, message queues, and external payment/BaaS integrations.
+> **Reconciliation note.** This bottom-up Year 1 total (~R$ 179k gross revenue, ~500 average active users, exit run-rate of 1,500 users) is lower than the top-down Year 1 figure carried in Table 6 of the TCC (R$ 291k, ~810 average users). The two are not reconcilable under the Chapter 8 acquisition ramp: a Year 1 average of 810 users would require reaching roughly 1,200 active users by month 8, far faster than the milestone of 500. The bottom-up figure is the more defensible of the two because it derives from the operational plan. Recommendation: update Table 6 of the TCC so that Year 1 gross revenue reads approximately R$ 179k to R$ 190k, keeping Years 2, 3, and 5 as committed. If the R$ 291k figure is preferred, the Chapter 8 acquisition milestones must be made correspondingly more aggressive (roughly fourteen offices and a steeper early ramp).
 
----
+### 5.3 Tab 3 — Three-to-Five-Year Projection
 
-## 5. Project Structure
+Years 2 onward are projected top-down from the office count and the steady-state per-office economics, with offices weighted between fully ramped and ramping.
 
-```
-agio/
-├── server.js              # Application entry point
-├── db.js                  # Database connection, schema DDL, pragmas
-├── seed.js                # Fictional demo data
-├── package.json           # Dependencies and npm scripts
-├── agio.db                # SQLite database (runtime, gitignored)
-├── uploads/               # Temporary CSV storage (gitignored)
-│
-├── routes/
-│   ├── auth.js            # Accounting office login
-│   ├── empresas.js        # Company listing and registration
-│   ├── funcionarios.js    # Employee listing and detail
-│   ├── ciclos.js          # Payroll cycle management and CSV upload
-│   ├── antecipacoes.js    # Advance creation and history
-│   ├── relatorio.js       # Deduction report CSV export
-│   └── acesso.js          # Employee authentication by CPF
-│
-└── public/
-    ├── index.html         # Login screen
-    ├── painel.html        # Accounting office dashboard
-    ├── funcionario.html   # Employee mobile page
-    └── css/
-        └── style.css      # Design system (CSS custom properties)
-```
+| Year | Contracted offices | Active users (avg) | Gross revenue | Operating profit | EBITDA |
+|---|---|---|---|---|---|
+| 1 | 10 (mostly ramping) | ~500 | ~R$ 179k | ~−R$ 58k | Negative |
+| 2 | 10 ramped equivalent | ~4,450 | ~R$ 1.6M | ~R$ 280k | Positive |
+| 3 | 25 | ~12,200 | R$ 4.4M | R$ 1.3M | Solid |
+| 5 | 80 | ~36,000 | ~R$ 12.9M | ~R$ 4.8M | Mature |
 
----
+The user counts are derived from the committed gross-revenue figures at R$ 359.64 of annual gross fee per active user (1.5 transactions × 12 months × R$ 19.98). The office count in Year 1 reflects contracted offices, most of which are still ramping and have not reached the 450-user steady state; this is why ten contracted offices in Year 1 carry roughly 500 average users rather than 4,500.
 
-## 6. Data Model
+### 5.4 Tab 4 — Financial Analysis
 
-### 6.1 Entity-relationship diagram
+**Cost structure across phases.**
 
-```
-escritorio (1) ──< empresa (N) ──< funcionario (N)
-                      │                    │
-                      │                    │
-                      └──< ciclo_folha (N) ┘
-                                │
-                                └──< antecipacao (N)
-```
+| Phase | Months | Monthly fixed cost | Coverage |
+|---|---|---|---|
+| 1 — Validation | 1 to 4 | ~R$ 200 | Platform infrastructure only; founder time bootstrapped |
+| 2 — Initial operation | 5 to 8 | ~R$ 9,500 | PostgreSQL migration, QI Tech minimums, basic support, FIDC setup fees |
+| 3 — Scale | 9 to 12 | ~R$ 18,500 | Production infrastructure, QI Tech full pricing, FIDC management, first operational hire, legal/compliance |
 
-### 6.2 Table definitions
+**Break-even.** Break-even is reached around month twelve, when roughly ten contracted offices (a mix of ramped and ramping, approximately 1,500 active users in aggregate) generate enough contribution margin to cover the Phase 3 fixed cost structure. The arithmetic: 1,500 active users at R$ 12.95 of monthly contribution margin produce approximately R$ 19,400, against the approximately R$ 18,500 of Phase 3 monthly fixed cost. The first sustained positive monthly EBITDA arrives one to two months later, around months fourteen to sixteen, once newly onboarded offices stabilize and working-capital requirements normalize.
 
-#### `escritorio` — Accounting office (root tenant)
+**NPV, IRR, and terminal value.** The Net Present Value of the operational cash flows alone (Years 1 through 5, no terminal value) is negative, the honest baseline of an operation that runs a cash deficit in Year 1 and turns cash-positive from Year 2. With a terminal value of five times Year 3 EBITDA and a 25% discount rate, the NPV is approximately R$ 118,838 and the IRR is 41%. A 15% discount rate (closer to senior FIDC investor expectations) more than triples the NPV; a 35% rate (closer to seed-stage venture expectations) reduces it to approximately R$ 40,000. The five-times terminal multiple is deliberately conservative against a Gordon perpetuity, chosen to keep the headline defensible under skeptical scrutiny.
 
-| Column | Type | Description |
-|---|---|---|
-| `id` | INTEGER PK | Auto-increment identifier |
-| `nome` | TEXT | Office name |
-| `cnpj` | TEXT | Brazilian corporate tax ID |
-| `email` | TEXT | Contact email |
-| `created_at` | TEXT | ISO timestamp (default: `datetime('now')`) |
+The financial case rests on the strategic optionality of the channel asset, monetized at the terminal moment, rather than on the operating cash flows of the anchor product alone. This is the financial expression of the central thesis: the channel is the asset, the product is the anchor.
 
-#### `empresa` — Client company
+### 5.5 Investment-Level Return
 
-| Column | Type | Description |
-|---|---|---|
-| `id` | INTEGER PK | Auto-increment identifier |
-| `escritorio_id` | INTEGER FK → `escritorio.id` | Owning accounting office |
-| `nome` | TEXT | Company name |
-| `cnpj` | TEXT | Company tax ID (unique per office) |
-| `created_at` | TEXT | Creation timestamp |
+Measured against the R$ 103,000 equity requirement, the Year 3 operating profit of R$ 1.3M represents approximately thirteen times the initial investment. This is the return figure cited in the TCC abstract. It is a profit-to-investment ratio at the Year 3 operating level, not an IRR; the IRR on the discounted five-year cash flows with terminal value is 41%.
 
-#### `funcionario` — Employee
+### 5.6 Tab 5 — Sensitivity (Three Scenarios)
 
-| Column | Type | Description |
-|---|---|---|
-| `id` | INTEGER PK | Auto-increment identifier |
-| `empresa_id` | INTEGER FK → `empresa.id` | Employer |
-| `nome` | TEXT | Full name |
-| `cpf` | TEXT | Brazilian individual tax ID (unique per company) |
-| `salario_liquido` | REAL | Net monthly salary |
-| `data_admissao` | TEXT | Hire date (`YYYY-MM-DD`) |
-| `status` | TEXT | `ativo` (default) or inactive |
-| `created_at` | TEXT | Creation timestamp |
+The model is tested across pessimistic, base, and optimistic scenarios. The variable to which the operation is most sensitive is transaction frequency: a move from 1.5 to 1.0 transactions per month shifts break-even by approximately four months and Year 3 EBITDA by approximately 25%. The variable to which the operation is least sensitive is ticket size, because the fee scales proportionally with the ticket.
 
-#### `ciclo_folha` — Payroll cycle
+| Variable | Pessimistic | Base | Optimistic |
+|---|---|---|---|
+| Transactions / active user / month | 1.0 | 1.5 | 2.0 |
+| Activation rate | 22% | 30% | 38% |
+| Offices contracted by month 12 | 6 | 10 | 14 |
+| Approximate break-even | ~month 16 | ~month 12 | ~month 9 |
+| Year 3 gross revenue | ~R$ 2.9M | R$ 4.4M | ~R$ 5.8M |
 
-| Column | Type | Description |
-|---|---|---|
-| `id` | INTEGER PK | Auto-increment identifier |
-| `empresa_id` | INTEGER FK → `empresa.id` | Company |
-| `competencia` | TEXT | Cycle identifier (e.g., `2026-05`) |
-| `arquivo_nome` | TEXT | Original uploaded filename |
-| `status` | TEXT | `processada` (active) or `inativa` |
-| `created_at` | TEXT | Upload timestamp |
-
-The **active cycle** for a company is the most recent record with `status = 'processada'`. Uploading a new CSV for the same competency deactivates the previous cycle.
-
-#### `antecipacao` — Salary advance
-
-| Column | Type | Description |
-|---|---|---|
-| `id` | INTEGER PK | Auto-increment identifier |
-| `funcionario_id` | INTEGER FK → `funcionario.id` | Requesting employee |
-| `ciclo_folha_id` | INTEGER FK → `ciclo_folha.id` | Associated payroll cycle |
-| `valor` | REAL | Advanced amount (BRL) |
-| `taxa` | REAL | Service fee charged |
-| `status` | TEXT | `aprovada`, `descontada`, or `cancelada` |
-| `data_solicitacao` | TEXT | Request timestamp |
-| `data_pagamento` | TEXT | Payment timestamp (nullable) |
-
-**Status semantics:** The demo flow creates advances with status `aprovada` immediately upon request — there is no pending/approval queue. The `descontada` status exists in the schema and seed data but is not set programmatically when a report is generated. The `cancelada` status has no corresponding endpoint.
-
-### 6.3 Database configuration
-
-SQLite is configured with two pragmas in `db.js`:
-
-- `journal_mode = WAL` — Write-Ahead Logging for improved concurrent read performance.
-- `foreign_keys = ON` — Enforces referential integrity at the database level.
-
-All queries use **prepared statements** via `better-sqlite3`, mitigating SQL injection regardless of the absence of an ORM.
+The gaps acknowledged in the TCC validation (the unmeasured activation rate and the unverified transaction frequency) sit precisely on the variables to which the model is most sensitive. This is the reason the operational priority of Year 1 is to produce real data on frequency and activation rather than to maximize office count.
 
 ---
 
-## 7. Core Business Rules
+## 6. FIDC Structuring
 
-### 7.1 Advance ceiling (teto)
+The capital that funds the advances is separate from the equity that funds the company. Advances are financed through a Credit Rights Investment Fund (Fundo de Investimento em Direitos Creditórios, FIDC), the standard vehicle for private consigned-credit operations in Brazil. QI Tech in its own portfolio, Gibb in its FIDC structures, and Mêntore Bank in its operation use the same model.
 
-The maximum advanceable amount per employee per cycle depends on tenure:
+### 6.1 Fund Sizing
 
-```
-IF days_since_hire > 90:
-    ceiling = net_salary × 0.40
-ELSE:
-    ceiling = net_salary × 0.20
-```
+At the month-12 scale of roughly 1,500 active users, monthly origination is approximately R$ 450,000 (1,500 users × 1.5 transactions × R$ 200). Because each advance turns over within roughly one payroll cycle, the fund needs approximately one month of origination outstanding at any time. The initial fund is sized at approximately R$ 500,000 to carry a buffer, scaling with origination volume as the operation grows.
 
-This rule is implemented identically in `funcionarios.js`, `acesso.js`, and `antecipacoes.js`.
+### 6.2 Quota Structure
 
-### 7.2 Available balance (saldo disponível)
+The fund is divided into two quota classes:
 
-```
-available_balance = ceiling − SUM(approved advances in active cycle)
-```
+**Senior quota** (approximately 85% to 90% of the fund), held by external investors, remunerated at CDI plus 2% to 3% per year. The senior investor is exposed to the worker's salary as the underlying credit, mediated by the priority deduction mechanism of Law 15.179 and protected by the first-loss absorption of the subordinated quota.
 
-If no active cycle exists for the company, the ceiling itself is returned as the available balance (advances cannot be created without an active cycle).
+**Subordinated quota** (approximately 10% to 15%), held by Ágio and optionally co-funded by originating accounting offices. The subordinated quota absorbs first loss in the waterfall: when a default occurs, the loss is taken against the subordinated quota up to its limit, and only after it is exhausted does the loss reach the senior investors.
 
-### 7.3 Service fee (taxa)
+At the R$ 500,000 fund size, the subordinated quota is approximately R$ 50,000 to R$ 75,000. The 0.2% default rate applied to R$ 450,000 of monthly origination produces approximately R$ 900 of monthly loss, which the subordinated cushion absorbs with wide margin.
 
-When an advance is created via `POST /api/antecipacoes`:
+### 6.3 Why the Structure Holds
 
-```
-fee = advance_amount × 0.0999   (9.99%)
-```
+The subordinated quota is Ágio's skin in the game and the structural reason senior investors accept the operation at CDI plus 2% to 3% rather than the higher rate an uncollateralized lending operation would require. The combination of the priority deduction mechanism and the first-loss absorption is what makes the senior quota a low-risk instrument against a high-risk borrower profile.
 
-Minimum advance amount: **R$ 50.00**.
+### 6.4 The Default Question Answered
 
-### 7.4 Commission split
+The question raised by the Sprint 4 panel — who pays when a default occurs — is answered here. The honest answer is not "the worker pays" (technically true at the deduction moment, but it does not address the credit-risk question) and not "the SME pays" (false; the SME bears no credit risk). The answer is that the subordinated quota of the FIDC absorbs the first loss, and Ágio holds the subordinated quota. Ágio carries the credit risk, in a structured form that lets the operation scale beyond its own balance sheet.
 
-The accounting office receives **35%** of the collected fee; Ágio retains the remainder:
+The three default scenarios and their treatment:
 
-```
-office_commission = fee × 0.35
-agio_revenue      = fee − office_commission
-```
+**Termination between advance and payroll cycle.** A worker takes an advance and is terminated before the next cycle closes, and severance does not cover the advance. Mitigated ex-ante by the 40%-of-net-salary limit and a reduced limit for workers under 90 days of tenure, and ex-post by the subordinated quota.
 
-These constants (`TAXA_PERCENTUAL = 0.0999`, `COMISSAO_ESCRITORIO = 0.35`) are defined in `routes/antecipacoes.js` and reused in reporting routes.
+**Insufficient net salary at payroll close.** Absences, garnishments, or other deductions consume the deduction limit before the Ágio deduction settles. Mitigated by the legal priority Law 15.179 grants consigned deductions, and by the conservative advance limit, with residual loss absorbed by the subordinated quota.
 
-### 7.5 Payroll deduction total
+**Fraud at the SME or office level.** The company receives the deduction instruction but does not deduct, or the office misreports. Mitigated by reconciliation between the deduction report and the settled deduction, by contractual obligations on the office, and by the subordinated quota for residual loss.
 
-Each advance generates a payroll deduction of:
+### 6.5 Governance
 
-```
-total_to_deduct = advance_amount + fee
-```
+The fund operates with the standard FIDC governance roles: an administrator, a custodian, and a manager, contracted through the QI Tech BaaS relationship or an equivalent provider. The originating criteria, the eligibility rules for credit rights, and the subordination ratio are defined in the fund's regulation. The default monitoring feeds back into the eligibility rules and the reserve calibration.
 
 ---
 
-## 8. REST API Reference
+## 7. Go-to-Market Playbook
 
-All endpoints return JSON unless otherwise noted. Error responses follow the format `{ "erro": "message" }`.
+### 7.1 The Acquisition Model
 
-### 8.1 Authentication
+The field work in Module 2 produced a clear conclusion: cold outreach does not work for this channel (a 9% response rate against 57% through warm referral), and the first ten offices must be acquired through referral chains. The playbook is built around that conclusion.
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/auth/login` | Returns the first accounting office in the database. **Credentials are not validated.** |
+The acquisition sequence for each office: a warm introduction from an existing contact or partner office, a first conversation to present the commission model and the operational integration, a live demonstration of the dashboard, a pilot agreement with one or two of the office's client companies, and a referral request once the office sees the first commission cycle.
 
-**Request body:** `{ "email": "...", "password": "..." }` (ignored)  
-**Response:** `{ "id": 1, "nome": "...", "email": "..." }`
+### 7.2 Sales Conversation — Accounting Office
 
-The client stores `id` and `nome` in `localStorage` and passes `escritorio_id` as a query parameter in subsequent requests.
+The office conversation leads with recurring revenue and zero operational load, the two things an accounting office values most and rarely gets together.
 
-### 8.2 Companies
+Opening: "You already manage payroll for dozens of companies. Ágio lets you offer those companies' employees a salary advance, deducted automatically in the next payroll, and pays you a 35% commission on every transaction. You don't operate anything. We handle the platform, the transfer, the compliance, and the worker. You present it, and the commission arrives monthly."
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/empresas?escritorio_id=` | List companies with aggregated KPIs |
-| `POST` | `/api/empresas` | Register a new company |
-| `GET` | `/api/empresas/:id` | Company detail with KPIs |
+The three points to establish in the first meeting: the office earns recurring revenue with no new headcount; the office takes on no credit risk and no operational delivery; the product strengthens the office's standing with its clients because it is a benefit the office brings to the table. The objection that surfaced in field work — the operational load of integrating a new product — is addressed by the live dashboard demonstration, which shows that the office's only action is presenting the product and reading the monthly commission report.
 
-**KPI fields appended to each company:** `total_funcionarios`, `total_antecipado_mes`, `comissao_estimada`.
+### 7.3 Sales Conversation — SME
 
-**Create request body:** `{ "escritorio_id": 1, "nome": "...", "cnpj": "..." }`
+The SME conversation, carried by the accountant rather than by Ágio directly, leads with turnover, not wellness.
 
-Duplicate CNPJ within the same office returns HTTP 409.
+Framing: "This is a benefit you offer your team at no cost and no risk. Your employees get access to a salary advance when they need it. You don't lend anything, you don't manage anything, and you don't change your payroll process. The benefit reduces the financial stress that drives part of your turnover, and turnover at your size costs three to four monthly salaries per exit."
 
-### 8.3 Employees
+The owner who hears "a benefit that reduces operational turnover" responds differently from the owner who hears "give your employees a financial app." The accountant carries the conversation because the accountant already holds the owner's trust.
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/funcionarios?empresa_id=` | List active employees with ceiling, balance, and advance status |
-| `GET` | `/api/funcionarios/:id` | Employee detail, advance history, and commission estimate |
+### 7.4 Worker Onboarding
 
-**Computed fields:** `teto`, `saldo_disponivel`, `total_antecipado_ciclo_atual`, `status_antecipacao` (`sem_antecipacao`, `com_antecipacao`, or `limite_esgotado`).
+The worker receives a link from the employer's HR, typically via WhatsApp, enters their CPF, sees their available balance, enters the amount, confirms, and receives the Pix. No registration, no password, no app. The deduction appears as a line item in the next payslip. The onboarding message template for HR: "You now have access to Ágio, a salary advance you can request whenever you need, repaid automatically in your next paycheck. No registration. Just open the link and enter your CPF."
 
-### 8.4 Payroll cycles
+### 7.5 Office Onboarding Checklist
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/ciclos?empresa_id=` | List cycles with advance counts |
-| `POST` | `/api/ciclos/upload` | Upload and process payroll CSV (multipart) |
+The operational steps from signed agreement to first advance, targeted to complete in under 24 hours:
 
-**Upload form fields:**
+1. Office signs the commission agreement and the data-processing terms.
+2. Office credentials created on the dashboard.
+3. Office registers its first client SME(s) and uploads the current payroll CSV.
+4. SME signs the authorization document.
+5. Employee access link generated and shared with the SME's HR contact.
+6. First advance executed; deduction report scheduled for cycle close.
 
-| Field | Type | Required |
-|---|---|---|
-| `empresa_id` | text | Yes |
-| `competencia` | text | Yes (e.g., `2026-05`) |
-| `arquivo` | file (.csv) | Yes |
+### 7.6 Go-to-Market Phases
 
-**Required CSV columns:** `cpf`, `nome`, `salario_liquido`, `data_admissao`
+**Phase 1 (months 1 to 4).** Convert the two confirmed meetings from Module 2 (Ponta Grossa and São Paulo) into the first pilot office, with real money movement.
 
-**Processing behavior:**
+**Phase 2 (months 5 to 8).** Expand to four offices through referrals from the first pilot, and gather the first real activation and default data.
 
-1. Delimiter auto-detected from the header row (`;` or `,`).
-2. Dates normalized from `DD/MM/YYYY` or `YYYY-MM-DD`.
-3. Rows missing CPF or salary are skipped.
-4. Existing employees (matched by CPF + company) are updated; new ones are inserted.
-5. All operations run inside a SQLite transaction.
-6. Uploaded file is deleted after processing.
-7. Previous cycle for the same competency is marked `inativa`.
-
-**Response:** `{ "ciclo_id", "competencia", "total_importados", "novos", "atualizados", "ignorados" }`
-
-### 8.5 Advances
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/antecipacoes` | Create an advance request |
-| `GET` | `/api/antecipacoes?funcionario_id=` | List advance history |
-
-**Create request body:** `{ "funcionario_id": 1, "valor": 300.00 }`
-
-**Validations performed server-side:**
-
-- Employee exists and is active.
-- An active payroll cycle exists for the company.
-- Amount ≥ R$ 50.00.
-- Amount ≤ available balance.
-
-**Response includes:** `comissao_escritorio`, `receita_agio` (computed, not persisted).
-
-### 8.6 Employee access
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/acesso` | Authenticate employee by CPF |
-| `GET` | `/api/acesso/:funcionario_id` | Employee data, balance, and full history |
-
-**Authenticate request body:** `{ "cpf": "111.222.333-44", "empresa_id": 1 }`
-
-Returns 404 if CPF is not found for the given company; 403 if employee is inactive.
-
-### 8.7 Deduction report
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/relatorio?empresa_id=&ciclo_id=` | Download CSV deduction report |
-
-Returns a CSV file with columns: `nome`, `cpf`, `valor`, `taxa`, `comissao_escritorio`, `receita_agio`, `total_a_descontar`, `data_solicitacao`, plus a totals row.
-
-### 8.8 Health check
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/health` | Returns `{ "ok": true }` |
+**Phase 3 (months 9 to 12).** Reach ten contracted offices, build the referral engine into the default mode of acquisition, and open the seed conversation.
 
 ---
 
-## 9. Operational Workflow
+## 8. Customer Acquisition Cost and Payback
 
-The following sequence describes a complete monthly cycle as implemented:
+### 8.1 Two Levels of Acquisition
 
-```mermaid
-sequenceDiagram
-    participant A as Accountant
-    participant P as painel.html
-    participant API as Express API
-    participant DB as SQLite
-    participant E as Employee
-    participant F as funcionario.html
+Ágio acquires offices and acquires workers, with different economics at each level.
 
-    A->>P: Log in (any credentials)
-    P->>API: POST /api/auth/login
-    API->>DB: SELECT first escritorio
-    API-->>P: escritorio_id
+**Worker acquisition** carries near-zero marginal cost. The worker arrives through the employer link, with no marketing spend, no sales touch, and no registration cost. The only cost is the KYC verification at the first advance, already counted in the per-transaction processing cost. Worker CAC is therefore effectively the platform cost already in the unit economics.
 
-    A->>P: Upload payroll CSV
-    P->>API: POST /api/ciclos/upload
-    API->>DB: INSERT ciclo_folha, UPSERT funcionario
-    API-->>P: Import summary
+**Office acquisition** is the meaningful CAC and is dominated by founder time rather than cash. Each office, acquired through a warm referral, requires roughly twelve to fifteen hours across introduction, two meetings, the demonstration, and onboarding. At a notional valuation of founder time, the fully loaded CAC per office is approximately R$ 1,500 to R$ 2,500. The cash CAC is close to zero in the bootstrap phase.
 
-    E->>F: Open link (?empresa_id=X)
-    E->>F: Enter CPF
-    F->>API: POST /api/acesso
-    API->>DB: Lookup CPF, compute balance
-    API-->>F: Employee data + saldo_disponivel
+### 8.2 Payback and LTV
 
-    E->>F: Request advance amount
-    F->>API: POST /api/antecipacoes
-    API->>DB: Validate balance, INSERT antecipacao
-    API-->>F: Confirmation (Pix simulated)
+A fully ramped office contributes R$ 5,825 per month to Ágio. Against a fully loaded CAC of approximately R$ 2,000, payback is under one month at full operation and three to four months even during the early ramp. The longer cost is not cash but time-to-ramp: the six to nine months an office takes to reach its steady state.
 
-    A->>P: Download deduction report
-    P->>API: GET /api/relatorio
-    API->>DB: Query approved advances for cycle
-    API-->>P: CSV file download
-```
+Office-level lifetime value, at a conservative three-year retention and full operation, is approximately R$ 5,825 × 36 = R$ 209,700 of contribution margin, against a CAC dominated by founder time. The LTV-to-CAC ratio is high enough that the binding constraint is founder capacity to run referral chains, not acquisition cost. This is why the hiring plan brings on a channel-success role rather than a large commercial team: the constraint is relationship throughput, not spend.
 
 ---
 
-## 10. Frontend Architecture
+## 9. Marketing and Acquisition Strategy
 
-### 10.1 Design approach
+Ágio does not run consumer marketing to workers. The product reaches workers through the employer, and consumer acquisition spend would be wasted against a model where the channel delivers the audience.
 
-The frontend consists of three standalone HTML pages with inline JavaScript. There is no bundler, module system, or component library. Styling is centralized in `public/css/style.css`, which defines a token-based design system using CSS custom properties for colors (`--brand-*`, `--neutral-*`), shadows, border radii, and typography.
+The marketing effort concentrates on the accounting-office channel and runs on three fronts. The first is the referral engine: every partner office is asked, after its first commission cycle, for introductions to two peer offices, which converts the network into a compounding acquisition source. The second is presence in accounting-profession spaces: regional accounting associations, ERP-vendor partner ecosystems, and the professional communities where mid-sized offices already gather. The third is a content track aimed at office owners, framed around the recurring-revenue opportunity and the turnover argument they can carry to their clients, rather than around the financial product itself.
 
-### 10.2 Page responsibilities
+The strategic discipline is to keep the marketing voice pointed at the office, not the worker and not the SME, because the office is the acquisition point and the other two segments are reached through it.
 
-**`index.html` — Login**
+---
 
-Dark-themed entry point with email/password form. On submit, calls `/api/auth/login`, stores office data in `localStorage`, and redirects to `painel.html`. Route protection on subsequent pages checks for the presence of `escritorio_id` in `localStorage`.
+## 10. Team and Hiring Plan
 
-**`painel.html` — Accounting dashboard**
+### 10.1 Year 1
 
-Desktop-oriented interface with a fixed sidebar and dynamic content area. Implements a shallow navigation model:
+The operation starts solo. The single largest risk in the risk matrix is the bus factor of a solo founder (probability 4, impact 5, score 20). The mitigation is a co-founder or technical lead brought on by month 6, who owns the production-grade infrastructure migration and the platform's evolution while the founder runs channel acquisition and capital.
 
-1. **Companies view** — Cards with KPIs (employees, monthly advances, commission).
-2. **Company detail** — Employee table with ceiling/balance/status, payroll upload modal, cycle list, report download.
-3. **Employee detail** — Individual advance history and financial summary.
+The first operational hire arrives in Phase 3 (months 9 to 12), a channel-success and operations role that handles office onboarding, the monthly commission cycle, and first-line support, freeing the founder to keep acquiring offices.
 
-Client-side logic (~415 lines) handles API calls, DOM rendering, CSV upload via `FormData`, and modal interactions.
-
-**`funcionario.html` — Employee page**
-
-Mobile-first layout optimized for smartphone access. Entry via URL parameter `?empresa_id=X`. Flow:
-
-1. CPF input with client-side masking.
-2. Balance dashboard with visual progress bar (used/limit ratio).
-3. Three-step advance flow: enter amount → confirm (shows fee breakdown) → success message.
-4. History grouped by payroll competency.
-
-Pix disbursement is **simulated** — the success screen displays a confirmation message without any payment API call.
-
-### 10.3 Client-side state
-
-| Key | Storage | Purpose |
+| Role | Timing | Function |
 |---|---|---|
-| `escritorio_id` | `localStorage` | Identifies the logged-in accounting office |
-| `escritorio_nome` | `localStorage` | Display name in dashboard header |
-| `funcionario_id` | In-memory (page scope) | Tracks authenticated employee during session |
+| Founder | Month 0 | Channel acquisition, capital, strategy |
+| Co-founder / CTO | Month 6 | Production infrastructure, platform, FIDC tech integration |
+| Channel success / operations | Months 9 to 12 | Office onboarding, commission cycle, support |
 
-No server-side session management exists.
+### 10.2 Year 2
 
----
+As the operation scales from ten to thirty offices, the team grows deliberately and stays lean. A channel lead takes over referral-chain management and office relationships. A part-time finance and compliance role handles the FIDC reporting, the LGPD obligations, and the QI Tech relationship. A second operations or support hire absorbs the growing transaction and onboarding volume.
 
-## 11. Security and Data Privacy
-
-### 11.1 Current implementation (demo)
-
-| Concern | Status |
-|---|---|
-| Accountant authentication | **Not implemented** — login returns the first office regardless of credentials |
-| API authorization | **Not implemented** — endpoints accept any `escritorio_id` without verification |
-| Employee authentication | CPF lookup only; no password, OTP, or token |
-| CPF storage | Plain text in SQLite |
-| HTTPS | Provided by hosting platform (Render) in production; not configured locally |
-| CORS | Open (`cors()` with no origin restriction) |
-| Rate limiting | Absent |
-| Input validation | Partial — business rules enforced; CPF checksum not validated |
-
-### 11.2 Data handled
-
-Even in demo mode, the schema stores fields that would be classified as personal and financial data under Brazil's LGPD (Lei 13.709/2018): CPF, name, net salary, hire date, and transaction history. The seed script uses entirely fictional identifiers.
-
-### 11.3 Production requirements (documented, not implemented)
-
-A production deployment would require, at minimum: JWT or OAuth-based authentication with httpOnly cookies, CPF hashing, TLS enforcement, migration to a managed relational database (PostgreSQL), LGPD-compliant consent flows, data retention policies, audit logging, and a Data Protection Impact Report (RIPD).
+The hiring philosophy mirrors the strategic posture: the constraint is channel throughput, not headcount, so the team grows only where it removes a bottleneck on office acquisition or operational delivery.
 
 ---
 
-## 12. Deployment
+## 11. Capital Requirements and Use of Funds
 
-### 12.1 Local development
+### 11.1 Equity Requirement
 
-**Prerequisites:** Node.js 20.x, npm 9+
+The total equity required to reach break-even at month twelve is approximately R$ 103,000:
 
-```bash
-git clone https://git.inteli.edu.br/lucas.galvao/agio.git
-cd agio
-npm install
-node server.js
-```
-
-The server listens on `process.env.PORT || 3000`. On first run, the database is created and seeded automatically.
-
-**Demo access:**
-
-| Interface | URL |
-|---|---|
-| Login | `http://localhost:3000` |
-| Dashboard | `http://localhost:3000/painel.html` |
-| Employee page | `http://localhost:3000/funcionario.html?empresa_id=1` |
-| Health check | `http://localhost:3000/api/health` |
-
-### 12.2 Production (Render)
-
-The application is deployed to Render's free tier at `https://agio-2.onrender.com`.
-
-| Setting | Value |
-|---|---|
-| Build command | `npm install --build-from-source` |
-| Start command | `node server.js` |
-| Node version | 20.x |
-| Port | Injected via `PORT` environment variable |
-
-The `--build-from-source` flag compiles `better-sqlite3` native bindings on Render's Linux environment, where prebuilt binaries may not match the runtime.
-
-Deployment uses a public GitHub mirror (`github.com/LucasG99/agio`) because Render cannot connect directly to Inteli's GitLab instance. Each push to the mirror triggers an automatic redeploy.
-
-**Ephemeral storage caveat:** On Render's free tier, the filesystem is not persistent across redeploys. The SQLite database is recreated and re-seeded on each deployment, which is acceptable for demonstration purposes.
-
-### 12.3 Encoding configuration
-
-Express static file serving does not set charset by default, which can cause encoding issues with Portuguese characters. The server explicitly sets UTF-8 for HTML and CSS files:
-
-```javascript
-app.use(express.static(path.join(__dirname, 'public'), {
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.html')) {
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    }
-    if (filePath.endsWith('.css')) {
-      res.setHeader('Content-Type', 'text/css; charset=utf-8');
-    }
-  }
-}));
-```
-
----
-
-## 13. Seed Data
-
-The `seed.js` script populates the database with a coherent demo scenario:
-
-| Entity | Count | Details |
+| Source | Amount | Use |
 |---|---|---|
-| Accounting office | 1 | Escritório Contábil Omega |
-| Companies | 3 | Padaria Flores, Auto Peças Vitória, Mercadinho Belo |
-| Employees | 18 | Distributed across companies; mix of tenures |
-| Payroll cycles | 5 | April 2026 (inactive) and May 2026 (active) per company |
-| Advances | ~12 | Pre-populated with mixed statuses for dashboard visualization |
+| Founder bootstrap | R$ 3,000 | First months of platform infrastructure (Phase 1) |
+| Angel round | R$ 100,000 | Operational scaling, Phase 2 and Phase 3 |
 
-Example employee CPF for testing: `111.222.333-44` (Ana Silva, Padaria Flores, `empresa_id=1`).
+The angel round, targeted to close in the first six months, funds the migration to production infrastructure, the QI Tech relationship, the FIDC structuring fees, the subordinated-quota contribution, and the first operational hire.
 
----
+### 11.2 FIDC Capital
 
-## 14. Known Limitations
+The capital that funds the advances is raised separately through the FIDC and does not come from the equity round. The senior quota (approximately R$ 437,500 at the initial R$ 500,000 fund size) is raised from external investors at CDI plus 2% to 3%. The subordinated quota (approximately R$ 62,500) is funded partially by Ágio using equity capital and partially by originating offices.
 
-The following constraints are inherent to the current implementation and are relevant for evaluators:
+### 11.3 Funding Sequence
 
-1. **No real payment integration** — Pix disbursement is simulated; no BaaS provider (e.g., QI Tech) is connected.
-2. **No server-side authorization** — API endpoints are publicly callable with knowledge of entity IDs.
-3. **Duplicated business logic** — Ceiling and balance calculations are copy-pasted across three route files rather than centralized.
-4. **Incomplete status lifecycle** — Advances are never transitioned to `descontada` upon report generation; cancellation has no endpoint.
-5. **CSV upload does not deactivate removed employees** — Employees absent from a new payroll file retain `status = 'ativo'`.
-6. **No automated tests** — Behavior is validated manually during development.
-7. **Report CSV delimiter** — Output uses commas; Brazilian Excel (pt-BR locale) may display columns incorrectly without manual parsing.
-8. **Single-tenant demo** — Seed creates one accounting office; login always returns the first record.
-
-These limitations reflect conscious trade-offs to deliver a functional end-to-end demonstration within the project scope.
+The seed conversation opens in Phase 3 (around month 11), with the actual round, if it happens, closing after month twelve. Raising a larger round before the channel asset is consolidated would set valuation expectations the operation cannot yet meet. The plan reaches break-even on the angel round alone, which keeps the seed conversation a choice rather than a necessity.
 
 ---
 
-## 15. Conclusion
+## 12. Risk Management
 
-Ágio implements a complete earned wage access workflow as a lightweight monolithic web application. The architecture prioritizes clarity and demonstrability: a single Node.js process, five database tables, seven API route modules, and three static frontend pages cover the full cycle from payroll ingestion to deduction reporting.
+The full risk matrix (twelve risks across six categories) is in Chapter 7 of the TCC. This section adds the operational mitigations relevant to execution.
 
-The technical contribution of this prototype lies not in architectural novelty but in **faithful modeling of the B2B2C operational flow** — particularly the accounting-firm-as-channel distribution model, CSV-based payroll integration (compatible with existing accountant workflows), and frictionless employee access via CPF without app installation.
+The three highest-scored risks are the solo-founder bus factor (score 20), slower-than-projected office acquisition (score 16), and data loss in the current MVP infrastructure (score 16). The mitigations are concrete and time-bound: the co-founder hire by month 6, the referral-chain acquisition model, and the mandatory PostgreSQL migration before any real money movement. Three further risks score 15: default above the assumed rate (mitigated by the FIDC subordinated quota), failure to raise the R$ 100k in time (mitigated by a reduced-scope bootstrap plan B), and entry of a capitalized competitor (mitigated by execution speed and the switching cost built into the office relationship).
 
-For production deployment, the codebase provides a validated domain model and user flow that would serve as the foundation for incremental hardening: real authentication, payment rail integration, database migration, and regulatory compliance.
+The reputational risk of a worker spiraling into debt is treated structurally rather than as a disclaimer: the 40%-of-net-salary advance limit, a monthly cap per user, the reduced limit for workers under 90 days of tenure, and the single-fee structure that blocks the compounding trap of revolving credit. The product is designed so that the worst-case worker outcome is bounded, which is both a reputational safeguard and a credit-risk control.
 
 ---
 
-*This document reflects the codebase as of June 2026. The source code is the authoritative reference for implementation details.*
+## 13. Appendices
+
+### 13.1 Model Contracts (Outline)
+
+The operation runs on three contract templates, to be drafted with legal counsel before production:
+
+- **Office commission agreement.** Defines the 35% commission, the monthly payment terms, the absence of a minimum volume requirement, the office's obligation to present the product accurately, and the data-processing responsibilities.
+- **SME authorization document.** Authorizes the salary advance benefit for the company's employees and commits the company to process the deduction in the payroll cycle, with no credit-risk assumption by the company.
+- **Worker terms of use and consent.** The explicit consent flow at first access, the fee disclosure, the deduction authorization, and the LGPD consent for personal-data processing.
+
+### 13.2 LGPD Compliance Path
+
+The MVP implements HTTPS, bcrypt password hashing, and access control. The production path adds the explicit consent flow at the worker's first access, encryption of personal data at rest, the self-service deletion path for the right to be forgotten, audit logs for sensitive operations, and a documented data-processing record. An LGPD audit precedes any real operation.
+
+### 13.3 Operational Procedures (Outline)
+
+- **Payroll cycle.** Office uploads the monthly payroll CSV; the system creates the cycle and updates employee records.
+- **Advance flow.** Worker requests within the available balance; the system validates, creates the advance, and triggers the Pix transfer.
+- **Deduction report.** At cycle close, the office generates the deduction CSV; the deductions are applied in the next payroll.
+- **Reconciliation.** The settled deduction is reconciled against the deduction report to catch the fraud scenario described in Section 6.4.
+- **Default handling.** A default event is logged, the loss is taken against the subordinated quota, and the eligibility rules and reserve are recalibrated against observed loss.
+
+---
+
+*This Business Plan is the operational complement to the Ágio TCC. The TCC carries the strategic narrative, the market analysis, the technological solution, and the validation record; this document carries the operational and financial depth behind them. Figures are consistent with the unit economics fixed in the TCC, with the single reconciliation item on the Year 1 revenue figure flagged in Section 5.2.*
